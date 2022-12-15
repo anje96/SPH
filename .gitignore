@@ -27,6 +27,15 @@
 *.lib
 
 # Executables
-*.exe
+bin/*.exe
 *.out
 *.app
+
+#emacs savefile
+*~
+
+#vs code dir
+.vscode/
+
+#Mac book system dir
+.DS_Store
