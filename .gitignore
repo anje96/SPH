@@ -27,7 +27,7 @@
 *.lib
 
 # Executables
-bin/*.exe
+bin/
 *.out
 *.app
 
@@ -37,5 +37,17 @@ bin/*.exe
 #vs code dir
 .vscode/
 
+#outpur dir
+output/
+
 #Mac book system dir
 .DS_Store
+
+#input/ output files
+*.h5
+
+#pngs
+*.png
+
+#highfive headers
+#highfive/*
