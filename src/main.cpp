@@ -5,19 +5,18 @@
 
 
 int N = 125; //number of particles
-double sml = 10; // smoothing length
-double c_s = 0.5; // speed of sound
+double sml = 2.5; // smoothing length
+double c_s = 1.5; // speed of sound
 double tStart = 0;
-double tEnd = 3; // simulation end time
-double deltaT = 0.1; // timestep for integration
+double tEnd = 1.5; // simulation end time
+double deltaT = 0.01; // timestep for integration
 double t = tStart; // time variable and start time
 
 
 
 
 int main(int argc, char** argv){
-    std::cout << "Hello World" << std::endl;
-
+    
     Particles particles(N, sml);
     InitialDistribution initDist("cubic_N125.h5");
     initDist.getAllParticles(particles);
@@ -41,20 +40,21 @@ int main(int argc, char** argv){
         
     }
     std::cout << "\n "; */
-
+    particles.write2file("output/timestep0" + std::string(".h5"));
     int counter = 1;
     while ( t < tEnd){
         
         // do Timestep with integration
         std::cout << "********************+*********  time:  " << t << "   ********************" << std::endl;
         doTimestep(particles, N, sml, deltaT, c_s);
-        
-        if(counter%10 == 0){
-        for( int i=0; i< N; i++){
+           for( int i=0; i< N; i++){
         std::cout << particles.x[i] << "  " << particles.y[i] << "   " << particles.z[i] << "\n";
         
     }
     std::cout << "\n ";
+        
+        if(counter%10 == 0){
+     
     //write particles to file
     particles.write2file("output/timestep" +  std::to_string(counter) + std::string(".h5"));
 

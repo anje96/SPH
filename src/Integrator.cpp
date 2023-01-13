@@ -76,8 +76,10 @@ void doTimestep(Particles &particles, int numParticles, double smoothingLength, 
 
     }
 
-    
-
+    particles.compNNSquare();
+    particles.compDensity();
+    particles.compPressure(c_s);
+    particles.compAcceleration();
     
 }
 

@@ -108,7 +108,7 @@ void Particles::compDensity(){
  
 };
 
-// Calc pressure over EOS, here isothermal, p dependent in sound velocity c_s
+// Calc pressure over EOS, here isothermal, p dependent on sound velocity c_s
 void Particles::compPressure(double c_s){
     for( int pCounter = 0; pCounter < N; pCounter++){
         p[pCounter] = c_s*c_s*rho[pCounter];
@@ -132,7 +132,15 @@ void Particles::compAcceleration(){
 
         neighbor = NNsquare[N*pCounter+numberOfNN];
         while( neighbor != -1){
-            prefactor = - m[neighbor] *(p[neighbor]+p[pCounter])/(rho[pCounter]*rho[neighbor]);
+
+            //problematic if dividing through 0
+            if(rho[pCounter]*rho[neighbor]== 0){
+                prefactor = 0;
+            }
+            else{
+                prefactor = - m[neighbor] *(p[neighbor]+p[pCounter])/(rho[pCounter]*rho[neighbor]);
+            }
+            
             gradKernel = gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml);
             
             axTemp += prefactor*gradKernel[0];

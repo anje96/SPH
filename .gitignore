@@ -50,4 +50,7 @@ output/
 *.png
 
 #highfive headers
-#highfive/*
+include/highfive/*
+
+#test python
+postprocessing/test.py
