@@ -1,26 +1,35 @@
 #include <iostream>
 #include "InitialDistribution.h"
 #include "Integrator.h"
+#include "Logger.h"
 
 
 
 int N = 125; //number of particles
 double sml = 2.5; // smoothing length
-double c_s = 1.5; // speed of sound
+double c_s = 3; // speed of sound
 double tStart = 0;
-double tEnd = 1.5; // simulation end time
-double deltaT = 0.01; // timestep for integration
+double tEnd = 7.5; // simulation end time
+double deltaT = 0.02; // timestep for integration
 double t = tStart; // time variable and start time
 
 
-
+structlog LOGCFG = {};
 
 int main(int argc, char** argv){
+    // initialize Logger
+    LOGCFG.headers = true;
+    LOGCFG.level = WARN;
     
+    Logger(INFO) << " >   Creating particles ... ";
     Particles particles(N, sml);
+    Logger(INFO) << " >   Reading inital distribution ... ";
     InitialDistribution initDist("cubic_N125.h5");
+    Logger(INFO) << " >   writing data to Particles...";
     initDist.getAllParticles(particles);
+    Logger(INFO) << " >   calc NN in cube... ";
     particles.compNNSquare();
+    Logger(INFO) << " >   calc density, pressure and acc.. ";
     particles.compDensity();
     /* for( int i=0; i< N; i++){
         std::cout << particles.rho[i] << "\n";
@@ -40,22 +49,25 @@ int main(int argc, char** argv){
         
     }
     std::cout << "\n "; */
+    Logger(INFO) << " >   write initial distribution to file ...";
     particles.write2file("output/timestep0" + std::string(".h5"));
     int counter = 1;
+    Logger(INFO) << " >   start integration...";
+
     while ( t < tEnd){
         
-        // do Timestep with integration
-        std::cout << "********************+*********  time:  " << t << "   ********************" << std::endl;
+        Logger(INFO) << " >   time: " << t;
         doTimestep(particles, N, sml, deltaT, c_s);
-           for( int i=0; i< N; i++){
+           /* for( int i=0; i< N; i++){
         std::cout << particles.x[i] << "  " << particles.y[i] << "   " << particles.z[i] << "\n";
         
     }
-    std::cout << "\n ";
+    std::cout << "\n "; */
         
         if(counter%10 == 0){
      
     //write particles to file
+    Logger(INFO) << " >   write particles to file...";
     particles.write2file("output/timestep" +  std::to_string(counter) + std::string(".h5"));
 
         }

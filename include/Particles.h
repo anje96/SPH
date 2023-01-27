@@ -4,6 +4,7 @@
 #include <iostream>
 #include "Kernel.h"
 #include <highfive/H5File.hpp>
+#include "Logger.h"
 
 
 
@@ -15,14 +16,17 @@ class Particles{
 
         int N;
         double sml;
-        double *m, *x, *y, *z, *vx, *vy, *vz, *rho, *p, *ax, *ay, *az;
+        double *m, *x, *y, *z, *vx, *vy, *vz, *rho, *drho, *p, *ax, *ay, *az;
         int *NNsquare;
 
         //compute nearest neighbors in square
         void compNNSquare();
         
-        // compute density of all Particles
+        // compute density of all Particles via Kernel sum
         void compDensity();
+    
+        // compute change of density via continuity equation
+        void ChangeOfDensity();
 
         //compute pressure of all particles, dependent of sound speed
         void compPressure(double c_s);

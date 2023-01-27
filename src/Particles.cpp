@@ -12,6 +12,7 @@ Particles::Particles( int NumParticles, double smoothingLength) {
     vz = new double[NumParticles];
     m = new double[NumParticles];
     rho = new double[NumParticles];
+    drho = new double[NumParticles];
     p = new double[NumParticles];
     ax = new double[NumParticles];
     ay = new double[NumParticles];
@@ -93,7 +94,8 @@ void Particles::compDensity(){
         int numberOfNN = 0;
         int neighbor = 0;
 
-        double rhoTemp = 0;
+        // self density of particle
+        double rhoTemp = m[pCounter];
 
         neighbor = NNsquare[N*pCounter+numberOfNN];
         while( neighbor != -1){
@@ -102,10 +104,17 @@ void Particles::compDensity(){
             numberOfNN++;
             neighbor = NNsquare[N*pCounter+numberOfNN];
         }
+        if(rhoTemp < 0){
+            Logger(WARN) << "Negative density, particle number: " << pCounter; 
+        }
         rho[pCounter] = rhoTemp;        
                
     }
  
+};
+
+void ChangeOfDensity(){
+    // TO DO: finish function
 };
 
 // Calc pressure over EOS, here isothermal, p dependent on sound velocity c_s
@@ -117,6 +126,7 @@ void Particles::compPressure(double c_s){
 };
 
 // Calc acceleration through differential equation, iterate over nearest neighbors
+// TO DO: self-acceleration? derivative for kernel zero for r_ij = 0. --> not necessary
 void Particles::compAcceleration(){
     for( int pCounter =0; pCounter < N; pCounter++){
         int numberOfNN = 0;
@@ -133,15 +143,12 @@ void Particles::compAcceleration(){
         neighbor = NNsquare[N*pCounter+numberOfNN];
         while( neighbor != -1){
 
-            //problematic if dividing through 0
-            if(rho[pCounter]*rho[neighbor]== 0){
-                prefactor = 0;
-            }
-            else{
-                prefactor = - m[neighbor] *(p[neighbor]+p[pCounter])/(rho[pCounter]*rho[neighbor]);
-            }
+            
+            prefactor = - m[neighbor] *(p[neighbor]+p[pCounter])/(rho[pCounter]*rho[neighbor]);
+            
             
             gradKernel = gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml);
+            
             
             axTemp += prefactor*gradKernel[0];
             ayTemp += prefactor*gradKernel[1];
@@ -150,6 +157,9 @@ void Particles::compAcceleration(){
             numberOfNN++;
             neighbor = NNsquare[N*pCounter+numberOfNN];
         }
+        if(std::isnan(axTemp) || std::isnan(ayTemp) || std::isnan(azTemp) ) {
+                Logger(WARN) <<" >  acceleration is nan, particle: " << pCounter;
+            }
         ax[pCounter] = axTemp;
         ay[pCounter] = ayTemp;
         az[pCounter] = azTemp;       
