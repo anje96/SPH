@@ -9,9 +9,10 @@ int N = 125; //number of particles
 double sml = 2.5; // smoothing length
 double c_s = 3; // speed of sound
 double tStart = 0;
-double tEnd = 7.5; // simulation end time
+double tEnd = 3; // simulation end time
 double deltaT = 0.02; // timestep for integration
 double t = tStart; // time variable and start time
+int dumpInterval = 15; //  interval in which particles are written to file
 
 
 structlog LOGCFG = {};
@@ -19,12 +20,13 @@ structlog LOGCFG = {};
 int main(int argc, char** argv){
     // initialize Logger
     LOGCFG.headers = true;
-    LOGCFG.level = WARN;
+    LOGCFG.level = INFO;
     
-    Logger(INFO) << " >   Creating particles ... ";
-    Particles particles(N, sml);
+   
     Logger(INFO) << " >   Reading inital distribution ... ";
     InitialDistribution initDist("cubic_N125.h5");
+     Logger(INFO) << " >   Creating particles ... ";
+    Particles particles(initDist.getNumberOfParticles(), sml);
     Logger(INFO) << " >   writing data to Particles...";
     initDist.getAllParticles(particles);
     Logger(INFO) << " >   calc NN in cube... ";
@@ -57,14 +59,14 @@ int main(int argc, char** argv){
     while ( t < tEnd){
         
         Logger(INFO) << " >   time: " << t;
-        doTimestep(particles, N, sml, deltaT, c_s);
+        doTimestepHeun(particles, N, sml, deltaT, c_s);
            /* for( int i=0; i< N; i++){
         std::cout << particles.x[i] << "  " << particles.y[i] << "   " << particles.z[i] << "\n";
         
     }
     std::cout << "\n "; */
         
-        if(counter%10 == 0){
+        if(counter%dumpInterval == 0){
      
     //write particles to file
     Logger(INFO) << " >   write particles to file...";

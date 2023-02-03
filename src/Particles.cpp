@@ -38,6 +38,7 @@ Particles::~Particles(){
     delete[] vz;
     delete[] m;
     delete[] rho;
+    delete[] drho;
     delete[] p;
     delete[] ax;
     delete[] ay;
@@ -95,7 +96,7 @@ void Particles::compDensity(){
         int neighbor = 0;
 
         // self density of particle
-        double rhoTemp = m[pCounter];
+        double rhoTemp = m[pCounter]*cubicSpline(x[pCounter], y[pCounter], z[pCounter], x[pCounter], y[pCounter], z[pCounter], sml);
 
         neighbor = NNsquare[N*pCounter+numberOfNN];
         while( neighbor != -1){
@@ -113,8 +114,35 @@ void Particles::compDensity(){
  
 };
 
-void ChangeOfDensity(){
-    // TO DO: finish function
+void Particles::ChangeOfDensity(){
+    for( int pCounter =0; pCounter < N; pCounter++){
+        int numberOfNN = 0;
+        int neighbor = 0;
+
+        // set change to zero
+        double drhoTemp = 0.0;
+        double* gradKernel;
+        double deltaVx;
+        double deltaVy;
+        double deltaVz;
+
+        neighbor = NNsquare[N*pCounter+numberOfNN];
+        while( neighbor != -1){
+
+            gradKernel = gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml);
+            deltaVx = vx[pCounter]- vx[neighbor];
+            deltaVy = vy[pCounter]- vy[neighbor];
+            deltaVz = vz[pCounter]- vz[neighbor];
+            
+            drhoTemp += m[neighbor]*(deltaVx*gradKernel[0] + deltaVy*gradKernel[1] + deltaVz*gradKernel[2]);
+            numberOfNN++;
+            neighbor = NNsquare[N*pCounter+numberOfNN];
+        }
+        
+        drho[pCounter] = drhoTemp;        
+               
+    }
+    
 };
 
 // Calc pressure over EOS, here isothermal, p dependent on sound velocity c_s

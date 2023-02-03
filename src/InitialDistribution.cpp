@@ -18,6 +18,9 @@ InitialDistribution::InitialDistribution(const std::string &file){
     if(!(x.size() == v.size() && x.size() == m.size() && v.size() == m.size())){
         throw std::length_error("Length mismatch between velocity, position and/or mass");
     }
+    else{
+        numberOfParticles = x.size();
+    }
 
 
 }

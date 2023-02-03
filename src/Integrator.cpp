@@ -83,4 +83,97 @@ void doTimestep(Particles &particles, int numParticles, double smoothingLength, 
     
 }
 
+void doTimestepHeun(Particles &particles,int numParticles, double smoothingLength, double deltaT, double c_s){
+    Particles predParticles(numParticles, smoothingLength);
+
+    for( int pCounter =0; pCounter < particles.N; pCounter++){
+        // copy masses
+        predParticles.m[pCounter] = particles.m[pCounter];
+        // calc predicted velocity
+        predParticles.vx[pCounter] = particles.vx[pCounter] + deltaT*particles.ax[pCounter];
+        predParticles.vy[pCounter] = particles.vy[pCounter] + deltaT*particles.ay[pCounter];
+        predParticles.vz[pCounter] = particles.vz[pCounter] + deltaT*particles.az[pCounter];
+        
+
+        #if HEUN_LIKE_PAPER == 1
+        // calc positions (not corrected), see elastics paper
+        predParticles.x[pCounter] = particles.x[pCounter] + deltaT*particles.vx[pCounter]+ 0.5*deltaT*deltaT*particles.ax[pCounter];
+        predParticles.y[pCounter] = particles.y[pCounter] + deltaT*particles.vy[pCounter]+ 0.5*deltaT*deltaT*particles.ay[pCounter];
+        predParticles.z[pCounter] = particles.z[pCounter] + deltaT*particles.vz[pCounter]+ 0.5*deltaT*deltaT*particles.az[pCounter];
+
+        #else
+        // calc predicted position from predicted velocity
+        predParticles.x[pCounter] = particles.x[pCounter] + deltaT*predParticles.vx[pCounter];
+        predParticles.y[pCounter] = particles.y[pCounter] + deltaT*predParticles.vy[pCounter];
+        predParticles.z[pCounter] = particles.z[pCounter] + deltaT*predParticles.vz[pCounter];
+
+        #endif
+
+        // calc predicted density via continuity equation
+        #if CALC_DENSITY == 1
+        predParticles.rho[pCounter] = particles.rho[pCounter] + deltaT* particles.drho[pCounter];
+
+        #endif
+
+     }
+
+    // calc nearest neighbors
+     predParticles.compNNSquare();
+
+    // calc density via kernel sum
+     #if CALC_DENSITY == 0
+     predParticles.compDensity();
+
+     #endif
+
+     //calc pressure
+     predParticles.compPressure(c_s);
+
+     // calc acceleration
+     predParticles.compAcceleration();
+
+    #if CALC_DENSITY == 1
+        // calc drho // TO DO: implement
+
+    #endif
+
+    // update particles
+    for( int pCounter = 0; pCounter < particles.N; pCounter++){
+        #if HEUN_LIKE_PAPER == 1
+        particles.x[pCounter] = predParticles.x[pCounter];
+        particles.y[pCounter] = predParticles.y[pCounter];
+        particles.z[pCounter] = predParticles.z[pCounter];
+        #else
+        particles.x[pCounter] = predParticles.x[pCounter]+ 0.5*deltaT*(predParticles.vx[pCounter]-particles.vx[pCounter]);
+        particles.y[pCounter] = predParticles.y[pCounter]+ 0.5*deltaT*(predParticles.vy[pCounter]-particles.vy[pCounter]);
+        particles.z[pCounter] = predParticles.z[pCounter]+ 0.5*deltaT*(predParticles.vz[pCounter]-particles.vz[pCounter]);
+
+        #endif
+
+        particles.vx[pCounter] = predParticles.vx[pCounter] + 0.5 *deltaT *(predParticles.ax[pCounter]-particles.ax[pCounter]);
+        particles.vy[pCounter] = predParticles.vy[pCounter] + 0.5 *deltaT *(predParticles.ay[pCounter]-particles.ay[pCounter]);
+        particles.vz[pCounter] = predParticles.vz[pCounter] + 0.5 *deltaT *(predParticles.az[pCounter]-particles.az[pCounter]);
+
+        #if CALC_DENSITY == 1
+        particles.rho[pCounter] = predParticles.rho[pCounter] + 0.5* deltaT*(preParticles.drho[pCounter]-particles.drho[pCounter]);
+
+        #endif
+    }
+    particles.compNNSquare();
+
+    #if CALC_DENSITY == 0
+    particles.compDensity();
+
+    #endif
+
+    particles.compPressure(c_s);
+    particles.compAcceleration();    
+
+}
+
+
+
+
+
+
 

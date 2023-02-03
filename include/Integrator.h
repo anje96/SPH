@@ -4,9 +4,13 @@
 #include <iostream>
 #include "parameter.h"
 #include "Particles.h"
+#include "InitialDistribution.h"
 
 //integrate with Leap Frog Integrator
 void doTimestep(Particles &particles, int numParticles, double smoothingLength, double deltaT, double c_s);
+
+// integrate with predrictor-corrector step, like in Elastics paper
+void doTimestepHeun(Particles &particles, int numParticles, double smoothingLength, double deltaT, double c_s);
 
 
 #endif // SPH_INTEGRATOR_H
