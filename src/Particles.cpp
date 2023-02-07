@@ -21,6 +21,19 @@ Particles::Particles( int NumParticles, double smoothingLength) {
     N = NumParticles;
     sml = smoothingLength;
 
+#if SOLIDS
+
+    /* access for \sigma_ij of particle p (particle index 0 to N-1) via stress[p*DIM*DIM + i*DIM + j]
+    */
+    stress = new double[NumParticles*DIM*DIM]; 
+    S11 = new double[NumParticles];
+    S12 = new double[NumParticles];
+    S13 = new double[NumParticles];
+    S22 = new double[NumParticles];
+    S23 = new double[NumParticles];
+
+#endif
+
     /* to store index of nearest neighbors of each particle
         acces via index = NumParticles * X + Y
         X indicating particle index and Y stores the index of nearest neighbor particle, if -1 no nearest neighbor
@@ -44,7 +57,20 @@ Particles::~Particles(){
     delete[] ay;
     delete[] az; 
 
-}
+};
+
+#if SOLIDS
+// setting functions
+void Particles::setMu(double muSet){
+    mu = muSet;
+};
+
+void Particles::setRho_0(double rho_0Set){
+   rhoRel = rho_0Set;
+};
+
+#endif
+
 
 // find nearest neighbor of each particle in cube with side length equal to smoothing length and write them into NNsquare
 void Particles::compNNSquare(){
@@ -114,7 +140,7 @@ void Particles::compDensity(){
  
 };
 
-void Particles::ChangeOfDensity(){
+void Particles::compDrho(){
     for( int pCounter =0; pCounter < N; pCounter++){
         int numberOfNN = 0;
         int neighbor = 0;
@@ -134,12 +160,12 @@ void Particles::ChangeOfDensity(){
             deltaVy = vy[pCounter]- vy[neighbor];
             deltaVz = vz[pCounter]- vz[neighbor];
             
-            drhoTemp += m[neighbor]*(deltaVx*gradKernel[0] + deltaVy*gradKernel[1] + deltaVz*gradKernel[2]);
+            drhoTemp += m[neighbor]*(deltaVx*gradKernel[0] + deltaVy*gradKernel[1] + deltaVz*gradKernel[2])/rho[neighbor];
             numberOfNN++;
             neighbor = NNsquare[N*pCounter+numberOfNN];
         }
         
-        drho[pCounter] = drhoTemp;        
+        drho[pCounter] = rho[pCounter]*drhoTemp;        
                
     }
     
@@ -148,7 +174,13 @@ void Particles::ChangeOfDensity(){
 // Calc pressure over EOS, here isothermal, p dependent on sound velocity c_s
 void Particles::compPressure(double c_s){
     for( int pCounter = 0; pCounter < N; pCounter++){
+
+#if SOLIDS
+        p[pCounter] = c_s*c_s*(rho[pCounter] - rhoRel);
+
+#else
         p[pCounter] = c_s*c_s*rho[pCounter];
+#endif
     }
     
 };

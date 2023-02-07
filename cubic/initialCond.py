@@ -3,6 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 
+#want an initial Distribution, set density true
+density = True
+
+
 #Dim
 dim = 3
 
@@ -15,6 +19,9 @@ r = np.zeros((N, dim))
 v = np.zeros((N, dim))
 # mass of particles
 m = np.ones(N)
+
+if(density):
+    rho = np.ones(N)
 
 h5f = h5py.File("cubic_N{}.h5".format(N), "w")
 print("Saving to cubic_N{}.h5 ...".format(N))
@@ -45,6 +52,8 @@ for i in range(dim):
 h5f.create_dataset("r", data=r)
 h5f.create_dataset("v", data=v)
 h5f.create_dataset("m", data= m)
+if(density):
+    h5f.create_dataset("rho", data = rho)
 
 h5f.close()
 print("Finished")

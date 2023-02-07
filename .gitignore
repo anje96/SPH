@@ -51,6 +51,10 @@ output/
 
 #highfive headers
 include/highfive/*
+#boost headers
+include/boost/*
+#headeronly
+headeronly/*
 
 #test python
-postprocessing/test.py
+postprocessing/test*.py

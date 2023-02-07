@@ -15,7 +15,12 @@ public:
 
 private:
     //containers to be filled from hdf5 file
-    std::vector<double> m {};
+    std::vector<double> m {}
+#if CALC_DENSITY == 1
+    ,density {}
+#endif
+    ;
+
     std::vector<std::vector<double>> x {}, v{};
     int numberOfParticles { 0 };
 };

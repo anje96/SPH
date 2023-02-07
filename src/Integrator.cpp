@@ -1,7 +1,7 @@
 #include "Integrator.h"
 
-void doTimestep(Particles &particles, int numParticles, double smoothingLength, double deltaT, double c_s){
-
+void doTimestep(Particles &particles, double smoothingLength, double deltaT, double c_s){
+        int numParticles = particles.N;
      // second set of particles to calc state variables and r,v,a for time t + deltaT/2
     Particles particles2(numParticles, smoothingLength);
 
@@ -83,7 +83,9 @@ void doTimestep(Particles &particles, int numParticles, double smoothingLength, 
     
 }
 
-void doTimestepHeun(Particles &particles,int numParticles, double smoothingLength, double deltaT, double c_s){
+// TO DO: expand for Solids
+void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT, double c_s){
+    int numParticles = particles.N;
     Particles predParticles(numParticles, smoothingLength);
 
     for( int pCounter =0; pCounter < particles.N; pCounter++){
@@ -133,7 +135,7 @@ void doTimestepHeun(Particles &particles,int numParticles, double smoothingLengt
      predParticles.compAcceleration();
 
     #if CALC_DENSITY == 1
-        // calc drho // TO DO: implement
+        predParticles.compDrho();
 
     #endif
 
@@ -154,17 +156,19 @@ void doTimestepHeun(Particles &particles,int numParticles, double smoothingLengt
         particles.vy[pCounter] = predParticles.vy[pCounter] + 0.5 *deltaT *(predParticles.ay[pCounter]-particles.ay[pCounter]);
         particles.vz[pCounter] = predParticles.vz[pCounter] + 0.5 *deltaT *(predParticles.az[pCounter]-particles.az[pCounter]);
 
-        #if CALC_DENSITY == 1
-        particles.rho[pCounter] = predParticles.rho[pCounter] + 0.5* deltaT*(preParticles.drho[pCounter]-particles.drho[pCounter]);
+#if CALC_DENSITY == 1
+        particles.rho[pCounter] = predParticles.rho[pCounter] + 0.5* deltaT*(predParticles.drho[pCounter]-particles.drho[pCounter]);
 
-        #endif
+#endif
     }
+
     particles.compNNSquare();
 
-    #if CALC_DENSITY == 0
+#if CALC_DENSITY == 0
     particles.compDensity();
-
-    #endif
+#else // calc drho for integration
+    particles.compDrho();
+#endif
 
     particles.compPressure(c_s);
     particles.compAcceleration();    

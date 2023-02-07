@@ -8,11 +8,21 @@
 // calc cubic Spline Kernel
 double cubicSpline(double xi, double yi, double zi, double xj, double yj, double zj, double sml){
     // one h 
-    double rij= sqrt((xi-xj)*(xi-xj) + (yi-yj)*(yi-yj)+ (zi-zj)*(zi-zj));
+    double rij= sqrt((xi-xj)*(xi-xj) + (yi-yj)*(yi-yj)
+#if KERNEL_DIM == 3
+    + (zi-zj)*(zi-zj)
+#endif 
+     );
     double rh = rij/sml;
 
-    double prefactor = 8/(M_PI*pow(sml,DIM)); //depends on DIM
-    
+    double prefactor = 0.0;
+
+#if KERNEL_DIM == 3
+    prefactor = 8/(M_PI*pow(sml,KERNEL_DIM)); //depends on KERNEL_DIM
+#else //KERNEL_DIM == 2
+    prefactor = 40/(7*M_PI*sml*sml);
+#endif
+
     if(rh > 1){
         return 0.0;
     }
@@ -33,12 +43,23 @@ double* gradCubicSpline(double xi, double yi, double zi, double xj, double yj, d
     // one h
     double xij = xi - xj;
     double yij = yi - yj;
+#if KERNEL_DIM == 3
     double zij = zi - zj;
-    double rij = sqrt(xij*xij + yij*yij + zij*zij);
+#endif
+    double rij = sqrt(xij*xij + yij*yij
+#if KERNEL_DIM == 3
+    + zij*zij
+ #endif
+    );
+
     double rh = rij/sml;
     
     double gradW;
-    double prefactor = 6*8/(M_PI*pow(sml,DIM+1));
+#if DIM == 3
+    double prefactor = 6*8/(M_PI*pow(sml,KERNEL_DIM+1));
+#else // KERNEL_DIM == 2
+    double prefactor = 6*40/(7*M_PI*pow(sml, KERNEL_DIM+1));
+#endif
 
     if(rh > 1){
         gradW = 0.0;
@@ -52,11 +73,13 @@ double* gradCubicSpline(double xi, double yi, double zi, double xj, double yj, d
     }
     gradW = gradW*prefactor;
 
-    static double gradWvec[DIM]; //static necessary
+    static double gradWvec[KERNEL_DIM]; //static necessary
 
     gradWvec[0] = gradW* xij/rij;
     gradWvec[1] = gradW* yij/rij;
+#if KERNEL_DIM == 3
     gradWvec[2] = gradW* zij/rij;
+#endif
     
     return gradWvec;
 }
