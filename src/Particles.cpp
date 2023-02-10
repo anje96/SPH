@@ -31,6 +31,14 @@ Particles::Particles( int NumParticles, double smoothingLength) {
     S13 = new double[NumParticles];
     S22 = new double[NumParticles];
     S23 = new double[NumParticles];
+    dS11 = new double[NumParticles];
+    dS12 = new double[NumParticles];
+    dS13 = new double[NumParticles];
+    dS22 = new double[NumParticles];
+    dS23 = new double[NumParticles];
+    /* access for dV_i/dx_j (i row, j column) of particle p (particle index 0 to N-1) via stress[p*DIM*DIM + i*DIM + j]
+    */
+    partialV = new double[NumParticles*DIM*DIM];
 
 #endif
 
@@ -57,20 +65,33 @@ Particles::~Particles(){
     delete[] ay;
     delete[] az; 
 
+#if SOLIDS
+    delete[] stress;
+    delete[] S11;
+    delete[] S12;
+    delete[] S13;
+    delete[] S22;
+    delete[] S23;
+    delete[] dS11;
+    delete[] dS12;
+    delete[] dS13;
+    delete[] dS22;
+    delete[] dS23;
+    delete[] partialV;
+#endif
+
 };
 
-#if SOLIDS
 // setting functions
+#if SOLIDS
 void Particles::setMu(double muSet){
     mu = muSet;
 };
+#endif
 
 void Particles::setRho_0(double rho_0Set){
    rhoRel = rho_0Set;
 };
-
-#endif
-
 
 // find nearest neighbor of each particle in cube with side length equal to smoothing length and write them into NNsquare
 void Particles::compNNSquare(){
@@ -174,20 +195,114 @@ void Particles::compDrho(){
 // Calc pressure over EOS, here isothermal, p dependent on sound velocity c_s
 void Particles::compPressure(double c_s){
     for( int pCounter = 0; pCounter < N; pCounter++){
-
-#if SOLIDS
         p[pCounter] = c_s*c_s*(rho[pCounter] - rhoRel);
-
-#else
-        p[pCounter] = c_s*c_s*rho[pCounter];
-#endif
     }
     
 };
 
+#if SOLIDS
+    // Calc stress tensor for every particle
+    void Particles::compStress(){
+        for( int pCounter = 0;  pCounter < N; pCounter++){
+            double S_ij[DIM*DIM] = {S11[pCounter], S12[pCounter], S13[pCounter], S12[pCounter], S22[pCounter], S23[pCounter]
+            , S13[pCounter], S23[pCounter], -(S11[pCounter]+S22[pCounter]) };
+            for( int i = 0; i < DIM; i++){
+                for(int j = 0; j < DIM; j++){
+                    if(i == j){
+                        stress[pCounter*DIM*DIM + i*DIM+ j] = -p[pCounter] + S_ij[i*DIM+j];
+                    }
+                    else{
+                        stress[pCounter*DIM*DIM + i*DIM+ j] =  S_ij[i*DIM+j];
+                    }
+                   
+                    
+                }
+            }
+       }
+   
+    };
+
+
+
+void Particles::compPartialVs(){
+    // set every partial derivative to zero first
+    for(int k = 0; k < DIM*DIM*N; k++){
+        partialV[k] = 0;
+    }
+    // loop over particles
+    for( int pCounter = 0; pCounter < N; pCounter++){
+        int numberOfNN = 0;
+        int neighbor = 0;
+        double* gradKernel;
+
+        double vParticle[DIM]  = {vx[pCounter], vy[pCounter], vz[pCounter]};
+
+        neighbor = NNsquare[N*pCounter+numberOfNN];
+        
+        // loop over nearest neighbors of each particle to calc dvi/dxj
+        while(neighbor != -1){
+            gradKernel = gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml);
+            double vNeighbor[DIM] = {vx[neighbor], vy[neighbor], vz[neighbor]};
+
+            for( int i = 0; i < DIM; i++){
+                for( int j = 0; j < DIM; j++){
+                partialV[DIM*DIM*pCounter + i*DIM + j] += m[neighbor]/rho[neighbor] *( vNeighbor[i]-vParticle[i]) * gradKernel[j];                    
+                }    
+            }
+
+            // switch to  next neighbor
+            numberOfNN++;
+            neighbor = NNsquare[N*pCounter+numberOfNN];
+
+        } 
+        // go to next particle
+
+    }
+};
+
+
+void Particles::compdS(){
+    for(int pCounter = 0; pCounter < N; pCounter++){
+        
+        double S_ij[DIM*DIM] = {S11[pCounter], S12[pCounter], S13[pCounter], S12[pCounter], S22[pCounter], S23[pCounter]
+            , S13[pCounter], S23[pCounter], -(S11[pCounter]+S22[pCounter]) }; // deviatoric stress tensor
+
+        double epsilon[DIM*DIM]; // strain rate tensor
+        double omega[DIM*DIM]; // rotation rate tensor
+
+        for(int i = 0; i < DIM; i++){
+            for(int j = 0; j < DIM; j++){
+                epsilon[i*DIM+ j] = 0.5*(partialV[pCounter*DIM*DIM + i*DIM + j]+partialV[pCounter*DIM*DIM + j*DIM + i] );
+                omega[i*DIM+ j] = 0.5*(partialV[pCounter*DIM*DIM + i*DIM + j]- partialV[pCounter*DIM*DIM + j*DIM + i] );
+            }
+        }
+
+        dS11[pCounter] = 2*mu* (epsilon[0*DIM+0]- (1/3)* epsilon[0*DIM+0]);
+        dS12[pCounter] = 2*mu* epsilon[0*DIM+1];
+        dS22[pCounter] = 2*mu* (epsilon[1*DIM+1]- (1/3)* epsilon[1*DIM+1]);
+        dS13[pCounter] = 2*mu* epsilon[0*DIM+2];
+        dS23[pCounter] = 2*mu* epsilon[1*DIM+2];
+
+        for(int k = 0; k < DIM; k++){
+            
+            dS11[pCounter] += S_ij[0*DIM+k]*omega[0*DIM+k] + omega[0*DIM+k]* S_ij[k*DIM+0];
+            dS12[pCounter] += S_ij[0*DIM+k]*omega[1*DIM+k] + omega[0*DIM+k]* S_ij[k*DIM+1];
+            dS22[pCounter] += S_ij[1*DIM+k]*omega[1*DIM+k] + omega[1*DIM+k]* S_ij[k*DIM+1];
+            dS13[pCounter] += S_ij[0*DIM+k]*omega[2*DIM+k] + omega[0*DIM+k]* S_ij[k*DIM+2];
+            dS23[pCounter] += S_ij[1*DIM+k]*omega[2*DIM+k] + omega[1*DIM+k]* S_ij[k*DIM+2];
+        }
+
+
+    }
+
+};
+
+#endif
+
 // Calc acceleration through differential equation, iterate over nearest neighbors
 // TO DO: self-acceleration? derivative for kernel zero for r_ij = 0. --> not necessary
 void Particles::compAcceleration(){
+    // iterate over all particles
     for( int pCounter =0; pCounter < N; pCounter++){
         int numberOfNN = 0;
         int neighbor = 0;
@@ -196,15 +311,40 @@ void Particles::compAcceleration(){
         double ayTemp = 0;
         double azTemp = 0;
 
-        double prefactor = 0;
+        
 
         double* gradKernel;
+#if SOLIDS
+        double dV[DIM] = {0,0,0};
+#else
+        double prefactor = 0;
+#endif
 
         neighbor = NNsquare[N*pCounter+numberOfNN];
+        // sum over nearest neighbors (while- loop)
         while( neighbor != -1){
+#if SOLIDS
+            gradKernel = gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml);
+            // calc dv_i for one neighbor with sum over stress tensor
+            for( int i = 0; i < DIM; i++){
+                for( int j = 0; j < DIM; j++){
+                    dV[i] += (stress[pCounter*DIM*DIM + i*DIM+ j]/(rho[pCounter]*rho[pCounter]) + 
+                    stress[neighbor*DIM*DIM + i*DIM+ j]/( rho[neighbor]*rho[neighbor]))*gradKernel[j];
+                }
+            }
 
-            
-            prefactor = - m[neighbor] *(p[neighbor]+p[pCounter])/(rho[pCounter]*rho[neighbor]);
+            // add up components of the sum to the total sum for each nearest neighbor
+            axTemp += m[neighbor]* dV[0];
+            ayTemp += m[neighbor]* dV[1];
+            azTemp += m[neighbor]* dV[2];
+
+
+#else
+            /*1st Version of SPH equation*/
+            //prefactor = - m[neighbor] *(p[neighbor]+p[pCounter])/(rho[pCounter]*rho[neighbor]);
+
+            /* 2nd Version of SPH equation*/
+            prefactor = -m[neighbor]* (p[neighbor]/(rho[neighbor]*rho[neighbor]) + p[pCounter]/(rho[pCounter]*rho[pCounter]));
             
             
             gradKernel = gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml);
@@ -213,13 +353,14 @@ void Particles::compAcceleration(){
             axTemp += prefactor*gradKernel[0];
             ayTemp += prefactor*gradKernel[1];
             azTemp += prefactor*gradKernel[2];
-            
+#endif           
             numberOfNN++;
             neighbor = NNsquare[N*pCounter+numberOfNN];
         }
         if(std::isnan(axTemp) || std::isnan(ayTemp) || std::isnan(azTemp) ) {
                 Logger(WARN) <<" >  acceleration is nan, particle: " << pCounter;
             }
+        // write new accelerations 
         ax[pCounter] = axTemp;
         ay[pCounter] = ayTemp;
         az[pCounter] = azTemp;       

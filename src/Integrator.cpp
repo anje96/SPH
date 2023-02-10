@@ -97,60 +97,73 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
         predParticles.vz[pCounter] = particles.vz[pCounter] + deltaT*particles.az[pCounter];
         
 
-        #if HEUN_LIKE_PAPER == 1
+    #if HEUN_LIKE_PAPER == 1
         // calc positions (not corrected), see elastics paper
         predParticles.x[pCounter] = particles.x[pCounter] + deltaT*particles.vx[pCounter]+ 0.5*deltaT*deltaT*particles.ax[pCounter];
         predParticles.y[pCounter] = particles.y[pCounter] + deltaT*particles.vy[pCounter]+ 0.5*deltaT*deltaT*particles.ay[pCounter];
         predParticles.z[pCounter] = particles.z[pCounter] + deltaT*particles.vz[pCounter]+ 0.5*deltaT*deltaT*particles.az[pCounter];
-
-        #else
+    #else
         // calc predicted position from predicted velocity
         predParticles.x[pCounter] = particles.x[pCounter] + deltaT*predParticles.vx[pCounter];
         predParticles.y[pCounter] = particles.y[pCounter] + deltaT*predParticles.vy[pCounter];
         predParticles.z[pCounter] = particles.z[pCounter] + deltaT*predParticles.vz[pCounter];
-
-        #endif
+    #endif
 
         // calc predicted density via continuity equation
-        #if CALC_DENSITY == 1
+    #if CALC_DENSITY == 1
         predParticles.rho[pCounter] = particles.rho[pCounter] + deltaT* particles.drho[pCounter];
+    #endif
 
-        #endif
+    #if SOLIDS
+    // calc predicted deviatoric stress tensor
+    predParticles.S11[pCounter] = particles.S11[pCounter] + deltaT* particles.S11[pCounter];
+    predParticles.S12[pCounter] = particles.S12[pCounter] + deltaT* particles.S12[pCounter];
+    predParticles.S13[pCounter] = particles.S13[pCounter] + deltaT* particles.S13[pCounter];
+    predParticles.S22[pCounter] = particles.S22[pCounter] + deltaT* particles.S22[pCounter];
+    predParticles.S23[pCounter] = particles.S23[pCounter] + deltaT* particles.S23[pCounter];
+    #endif
 
      }
 
     // calc nearest neighbors
-     predParticles.compNNSquare();
+    predParticles.compNNSquare();
 
     // calc density via kernel sum
-     #if CALC_DENSITY == 0
-     predParticles.compDensity();
-
-     #endif
+#if CALC_DENSITY == 0
+    predParticles.compDensity();
+#endif
 
      //calc pressure
-     predParticles.compPressure(c_s);
+    predParticles.compPressure(c_s);
+
+#if SOLIDS
+    predParticles.compStress();
+    predParticles.compPartialVs();
+    predParticles.compdS();
+#endif
+
 
      // calc acceleration
-     predParticles.compAcceleration();
+    predParticles.compAcceleration();
 
-    #if CALC_DENSITY == 1
+#if CALC_DENSITY == 1
         predParticles.compDrho();
 
-    #endif
+#endif
 
     // update particles
     for( int pCounter = 0; pCounter < particles.N; pCounter++){
-        #if HEUN_LIKE_PAPER == 1
+
+#if HEUN_LIKE_PAPER == 1
         particles.x[pCounter] = predParticles.x[pCounter];
         particles.y[pCounter] = predParticles.y[pCounter];
         particles.z[pCounter] = predParticles.z[pCounter];
-        #else
+#else
         particles.x[pCounter] = predParticles.x[pCounter]+ 0.5*deltaT*(predParticles.vx[pCounter]-particles.vx[pCounter]);
         particles.y[pCounter] = predParticles.y[pCounter]+ 0.5*deltaT*(predParticles.vy[pCounter]-particles.vy[pCounter]);
         particles.z[pCounter] = predParticles.z[pCounter]+ 0.5*deltaT*(predParticles.vz[pCounter]-particles.vz[pCounter]);
 
-        #endif
+#endif
 
         particles.vx[pCounter] = predParticles.vx[pCounter] + 0.5 *deltaT *(predParticles.ax[pCounter]-particles.ax[pCounter]);
         particles.vy[pCounter] = predParticles.vy[pCounter] + 0.5 *deltaT *(predParticles.ay[pCounter]-particles.ay[pCounter]);
@@ -158,7 +171,14 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
 
 #if CALC_DENSITY == 1
         particles.rho[pCounter] = predParticles.rho[pCounter] + 0.5* deltaT*(predParticles.drho[pCounter]-particles.drho[pCounter]);
+#endif
 
+#if SOLIDS
+        particles.S11[pCounter] = predParticles.S11[pCounter] + 0.5* deltaT*(predParticles.dS11[pCounter]- particles.dS11[pCounter]);
+        particles.S12[pCounter] = predParticles.S12[pCounter] + 0.5* deltaT*(predParticles.dS12[pCounter]- particles.dS12[pCounter]);
+        particles.S13[pCounter] = predParticles.S13[pCounter] + 0.5* deltaT*(predParticles.dS13[pCounter]- particles.dS13[pCounter]);
+        particles.S22[pCounter] = predParticles.S22[pCounter] + 0.5* deltaT*(predParticles.dS22[pCounter]- particles.dS22[pCounter]);
+        particles.S23[pCounter] = predParticles.S23[pCounter] + 0.5* deltaT*(predParticles.dS23[pCounter]- particles.dS23[pCounter]);
 #endif
     }
 
@@ -171,6 +191,13 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
 #endif
 
     particles.compPressure(c_s);
+
+#if SOLIDS
+    particles.compStress();
+    particles.compPartialVs();
+    particles.compdS();
+#endif
+
     particles.compAcceleration();    
 
 }

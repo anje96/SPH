@@ -19,21 +19,34 @@ class Particles{
         double sml;
         double *m, *x, *y, *z, *vx, *vy, *vz, *rho, *drho, *p, *ax, *ay, *az;
         int *NNsquare;
+        double rhoRel; // density in relaxed state
+
+        void setRho_0(double rho_0Set);
 
 #if SOLIDS
         double mu; //shear modulus
-        double rhoRel; // density in relaxed state
-
         double *stress; // stress tensor - for each particle DIM*DIM, for all particles DIM*DIM*Number of particles
 
         // entries of deviatoric stress tensor - only 5 needed
         double *S12, *S13, *S23, *S11, *S22; // S21 = S21, S13 = S31, S23 = S32, S33 = -(S11+S22)
+        // derivatives of the deviatoric stress tensor with respect to time
+        double  *dS12, *dS13, *dS23, *dS11, *dS22;
+
+        double *partialV; // partial derivatives of V
 
         // TO DO: add further variables needed
-        
         // set parameters
         void setMu(double muSet);
-        void setRho_0(double rho_0Set);
+
+        /*calc Stress tensor for every particle */
+          
+        void compStress();
+        /* calc partial derivatives of v for every particle with respect to their position
+           (dell v_i/ dell x_j)_a = sum_b m_b/rho_b( v_b - v_a) dell W_ab/dell x_j_a*/
+        void compPartialVs();
+        // calc time derivatives of deviatoric stress tensor
+        void compdS();
+        
 #endif
 
 

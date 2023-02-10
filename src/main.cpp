@@ -10,8 +10,8 @@ structlog LOGCFG = {};
 
 int main(int argc, char** argv){
 
-    cxxopts::Options cmdLineOptions { "mlh",
-                                      "Demonstrator for the meshless hydrodynamic simulation methods MFV and MFM" };
+    cxxopts::Options cmdLineOptions { "sph",
+                                      "testcode for isothermal gas and solids" };
     cmdLineOptions.add_options()
             ("c,config", "Path to config file", cxxopts::value<std::string>()->default_value("config.info"))
           /*   ("v,verbose", "More printouts for debugging")
@@ -56,9 +56,9 @@ int main(int argc, char** argv){
     Logger(INFO) << "   >   Shear modulus: " << config.shearModulus;
 #endif
 
-       Logger(INFO) << "   >   Reading inital distribution ... ";
+    Logger(INFO) << "   >   Reading inital distribution ... ";
     InitialDistribution initDist(config.initFile);
-     Logger(INFO) << "   >   Creating particles ... ";
+    Logger(INFO) << "   >   Creating particles ... ";
     Particles particles(initDist.getNumberOfParticles(), config.smoothingLength);
     Logger(INFO) << "   >   writing data to Particles...";
     initDist.getAllParticles(particles);
@@ -68,22 +68,37 @@ int main(int argc, char** argv){
     particles.setMu(config.shearModulus);
     particles.setRho_0(config.restDensity);
     // TO DO: add further calls when necessary
+#else
+    Logger(INFO) << "   >   setting rest density to zero for gas...";
+    particles.setRho_0(0); // set rho_0 to zero for gas
 #endif
 
     Logger(INFO) << "   >   calc NN in cube... ";
     particles.compNNSquare();
 
-    Logger(INFO) << "   >   calc density... ";
+    
 
 #if CALC_DENSITY == 0 // Kernel sum
+    Logger(INFO) << "   >   calc density... ";
     particles.compDensity();
 #else // calc drho for later integration of rho
+    Logger(INFO) << "   >   calc drho... ";
     particles.compDrho();
 #endif
 
    
-    Logger(INFO) << "   >   calc pressure and acc.. ";
+    Logger(INFO) << "   >   calc pressure...";
     particles.compPressure(config.speedOfSound);
+#if SOLIDS
+    Logger(INFO) << "   >   calc stress...";
+    particles.compStress();
+    Logger(INFO) << "   >   calc partial derivatives of v with respect to x...";
+    particles.compPartialVs();
+    Logger(INFO) << "   >   calc dS/dt...";
+    particles.compdS();
+#endif
+
+    Logger(INFO) << "   >   calc acc...";
     particles.compAcceleration();
    
     Logger(INFO) << "   >   write initial distribution to file ...";

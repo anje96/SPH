@@ -1,26 +1,26 @@
 ; h5 file containing the initial particle distribution
-initFile cubic_N125.h5
+initFile rings.h5
 
 ; output directory for particle distribution h5 files
 outDir output
 
 ; fixed time step
-timeStep .02
+timeStep .05
 
 ; end of the simulation
-timeEnd 2.
+timeEnd 5.
 
 ; output particle distribution each h5DumpInterval steps
-h5DumpInterval 10
+h5DumpInterval 20
 
 ; Sound speed
 speedOfSound 1.
 
 ; smoothing length
-smoothingLength 2.5
+smoothingLength 0.15
 
 ; density in relaxed state, ignored when SOLIDS not set in parameter.h5
-restDensity 1
+restDensity 100
 
 ; shear modulus, ignored when SOLIDS not set in parameter.h
 shearModulus 0.22
