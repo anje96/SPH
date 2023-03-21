@@ -1,9 +1,9 @@
 #include "Integrator.h"
 
-void doTimestep(Particles &particles, double smoothingLength, double deltaT, double c_s){
+void doTimestep(Particles &particles, double smoothingLength, double deltaT, double c_s, double rho_0, int maxNearestNeighbors){
         int numParticles = particles.N;
      // second set of particles to calc state variables and r,v,a for time t + deltaT/2
-    Particles particles2(numParticles, smoothingLength);
+    Particles particles2(numParticles, smoothingLength, c_s, maxNearestNeighbors);
 
      for(int pCounter = 0; pCounter < numParticles ; pCounter++){
 
@@ -32,7 +32,7 @@ void doTimestep(Particles &particles, double smoothingLength, double deltaT, dou
         //copy masses accordingly
         particles2.m[pCounter] = particles.m[pCounter];
      }
-
+    particles2.setRho_0(rho_0);
     // update state variable and acceleration of second set of particles
     particles2.compNNSquare();
     particles2.compDensity();
@@ -43,7 +43,7 @@ void doTimestep(Particles &particles, double smoothingLength, double deltaT, dou
     }
     std::cout << "\n "; */
 
-    particles2.compPressure(c_s);
+    particles2.compPressure();
 
     /* std::cout << "Pressure: " << std::endl;
     for( int i=0; i< numParticles; i++){
@@ -78,15 +78,16 @@ void doTimestep(Particles &particles, double smoothingLength, double deltaT, dou
 
     particles.compNNSquare();
     particles.compDensity();
-    particles.compPressure(c_s);
+    particles.compPressure();
     particles.compAcceleration();
     
 }
 
-// TO DO: expand for Solids
-void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT, double c_s){
+
+void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT, double c_s, double rho_0, int maxNearestNeighbors){
     int numParticles = particles.N;
-    Particles predParticles(numParticles, smoothingLength);
+    Particles predParticles(numParticles, smoothingLength,c_s, maxNearestNeighbors);
+    bool prednegativeDensity = false;
 
     for( int pCounter =0; pCounter < particles.N; pCounter++){
         // copy masses
@@ -103,27 +104,44 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
         predParticles.y[pCounter] = particles.y[pCounter] + deltaT*particles.vy[pCounter]+ 0.5*deltaT*deltaT*particles.ay[pCounter];
         predParticles.z[pCounter] = particles.z[pCounter] + deltaT*particles.vz[pCounter]+ 0.5*deltaT*deltaT*particles.az[pCounter];
     #else
-        // calc predicted position from predicted velocity
-        predParticles.x[pCounter] = particles.x[pCounter] + deltaT*predParticles.vx[pCounter];
-        predParticles.y[pCounter] = particles.y[pCounter] + deltaT*predParticles.vy[pCounter];
-        predParticles.z[pCounter] = particles.z[pCounter] + deltaT*predParticles.vz[pCounter];
+        // calc predicted position 
+        predParticles.x[pCounter] = particles.x[pCounter] + deltaT*particles.vx[pCounter];
+        predParticles.y[pCounter] = particles.y[pCounter] + deltaT*particles.vy[pCounter];
+        predParticles.z[pCounter] = particles.z[pCounter] + deltaT*particles.vz[pCounter];
     #endif
 
+    predParticles.setRho_0(rho_0);
         // calc predicted density via continuity equation
-    #if CALC_DENSITY == 1
+#if CALC_DENSITY == 1
         predParticles.rho[pCounter] = particles.rho[pCounter] + deltaT* particles.drho[pCounter];
-    #endif
+#if DEBUG_LEVEL == (1 || 2)
+        
+        if(predParticles.rho[pCounter]< 0){
+            prednegativeDensity = true;
+            #if DEBUG_LEVEL == 2
+            Logger(WARN) << " Density is negative... pred particle:  " << pCounter; 
+            #endif
+        }
+             
+        
+#endif  
+#endif
 
     #if SOLIDS
     // calc predicted deviatoric stress tensor
-    predParticles.S11[pCounter] = particles.S11[pCounter] + deltaT* particles.S11[pCounter];
-    predParticles.S12[pCounter] = particles.S12[pCounter] + deltaT* particles.S12[pCounter];
-    predParticles.S13[pCounter] = particles.S13[pCounter] + deltaT* particles.S13[pCounter];
-    predParticles.S22[pCounter] = particles.S22[pCounter] + deltaT* particles.S22[pCounter];
-    predParticles.S23[pCounter] = particles.S23[pCounter] + deltaT* particles.S23[pCounter];
+    predParticles.S11[pCounter] = particles.S11[pCounter] + deltaT* particles.dS11[pCounter];
+    predParticles.S12[pCounter] = particles.S12[pCounter] + deltaT* particles.dS12[pCounter];
+    predParticles.S13[pCounter] = particles.S13[pCounter] + deltaT* particles.dS13[pCounter];
+    predParticles.S22[pCounter] = particles.S22[pCounter] + deltaT* particles.dS22[pCounter];
+    predParticles.S23[pCounter] = particles.S23[pCounter] + deltaT* particles.dS23[pCounter];
     #endif
-
+        if(pCounter == 4391){
+            printf(" Predicted particles r,v,rho,S updated \n");
+        }
      }
+     if(prednegativeDensity){
+        Logger(WARN) << " Density somewhere negative predicted Particles...";
+    }
 
     // calc nearest neighbors
     predParticles.compNNSquare();
@@ -132,9 +150,13 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
 #if CALC_DENSITY == 0
     predParticles.compDensity();
 #endif
+#if CALC_DENSITY == 1
+
+        predParticles.compDrho();
+#endif
 
      //calc pressure
-    predParticles.compPressure(c_s);
+    predParticles.compPressure();
 
 #if SOLIDS
     predParticles.compStress();
@@ -146,12 +168,15 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
      // calc acceleration
     predParticles.compAcceleration();
 
-#if CALC_DENSITY == 1
-        predParticles.compDrho();
+    //predParticles.write2file("output/pred" +  std::string(".h5"));
 
-#endif
+
 
     // update particles
+    bool negativeDensity = false;
+    bool rIsnan = false;
+    bool vIsnan = false;
+    bool densityIsnan = false;
     for( int pCounter = 0; pCounter < particles.N; pCounter++){
 
 #if HEUN_LIKE_PAPER == 1
@@ -171,6 +196,27 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
 
 #if CALC_DENSITY == 1
         particles.rho[pCounter] = predParticles.rho[pCounter] + 0.5* deltaT*(predParticles.drho[pCounter]-particles.drho[pCounter]);
+        
+#if DEBUG_LEVEL == (1 || 2)
+        
+        if(particles.rho[pCounter]< 0){
+            negativeDensity = true;
+            #if DEBUG_LEVEL == 2
+            Logger(WARN) << " Density is negative... particle:  " << pCounter; 
+            #endif
+        }
+        if(std::isnan(particles.rho[pCounter])){
+            densityIsnan = true;
+        }
+        if(std::isnan(particles.x[pCounter]) || std::isnan(particles.y[pCounter])||std::isnan(particles.y[pCounter])){
+            rIsnan = true;
+        }
+         if(std::isnan(particles.vx[pCounter]) || std::isnan(particles.vy[pCounter])||std::isnan(particles.vy[pCounter])){
+            vIsnan = true;
+        }
+        
+        
+#endif
 #endif
 
 #if SOLIDS
@@ -180,17 +226,35 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
         particles.S22[pCounter] = predParticles.S22[pCounter] + 0.5* deltaT*(predParticles.dS22[pCounter]- particles.dS22[pCounter]);
         particles.S23[pCounter] = predParticles.S23[pCounter] + 0.5* deltaT*(predParticles.dS23[pCounter]- particles.dS23[pCounter]);
 #endif
+    if(pCounter == 4391){
+            printf(" particles r,v,rho,S updated \n");
+        }
     }
+    if(negativeDensity){
+        Logger(WARN) << " Density somewhere negative...";
+    }
+    if(densityIsnan){
+        Logger(WARN) << " rho nan somewhere...";
+    }
+    if(rIsnan){
+        Logger(WARN) << " r nan somewhere...";
+    }
+     if(vIsnan){
+        Logger(WARN) << " v nan somewhere...";
+    }
+    
+    
 
     particles.compNNSquare();
-
+    
 #if CALC_DENSITY == 0
     particles.compDensity();
 #else // calc drho for integration
+
     particles.compDrho();
 #endif
 
-    particles.compPressure(c_s);
+    particles.compPressure();
 
 #if SOLIDS
     particles.compStress();

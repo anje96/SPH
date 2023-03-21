@@ -48,33 +48,37 @@ int main(int argc, char** argv){
     Logger(INFO) << "   >   Speed of Sound: " << config.speedOfSound;
     config.smoothingLength = confP.getVal<double>("smoothingLength");
     Logger(INFO) << "   >   smoothing Length: " << config.smoothingLength;
+    config.restDensity = confP.getVal<double>("restDensity");
+    Logger(INFO) << "   >   Density of particles in relaxed State, should be zero for gas: " << config.restDensity;
+    config.maxNN = confP.getVal<int>("maxNN");
+    Logger(INFO) << "   >   maximum number of nearest neighbors: " << config.maxNN;
 
 #if SOLIDS
-    config.restDensity = confP.getVal<double>("restDensity");
-    Logger(INFO) << "   >   Density of particles in relaxed State: " << config.restDensity;
     config.shearModulus = confP.getVal<double>("shearModulus");
     Logger(INFO) << "   >   Shear modulus: " << config.shearModulus;
 #endif
 
-    Logger(INFO) << "   >   Reading inital distribution ... ";
+    Logger(INFO) << "   >   Reading initial distribution ... ";
     InitialDistribution initDist(config.initFile);
     Logger(INFO) << "   >   Creating particles ... ";
-    Particles particles(initDist.getNumberOfParticles(), config.smoothingLength);
+    Particles particles(initDist.getNumberOfParticles(), config.smoothingLength, config.speedOfSound, config.maxNN);
+    Logger(INFO) << "   >   number of particles: "<< initDist.getNumberOfParticles();
     Logger(INFO) << "   >   writing data to Particles...";
     initDist.getAllParticles(particles);
 
 #if SOLIDS
-    Logger(INFO) << "   >   setting shear module, rest density...";
+    Logger(INFO) << "   >   setting shear module...";
     particles.setMu(config.shearModulus);
-    particles.setRho_0(config.restDensity);
     // TO DO: add further calls when necessary
-#else
-    Logger(INFO) << "   >   setting rest density to zero for gas...";
-    particles.setRho_0(0); // set rho_0 to zero for gas
 #endif
+    Logger(INFO) << "   >   setting rest density:...";
+    particles.setRho_0(config.restDensity); // set rho_0 to zero for gas
+
+
 
     Logger(INFO) << "   >   calc NN in cube... ";
     particles.compNNSquare();
+
 
     
 
@@ -84,40 +88,75 @@ int main(int argc, char** argv){
 #else // calc drho for later integration of rho
     Logger(INFO) << "   >   calc drho... ";
     particles.compDrho();
+    //particles.drho[0] = 1;
 #endif
-
    
     Logger(INFO) << "   >   calc pressure...";
-    particles.compPressure(config.speedOfSound);
+    particles.compPressure();
+    //particles.p[0] = 2;
+
 #if SOLIDS
     Logger(INFO) << "   >   calc stress...";
     particles.compStress();
+/*  particles.stress[0] = 1;
+    particles.stress[1] = 2;
+    particles.stress[2] = 3;
+    particles.stress[3] = 4;
+    particles.stress[4] = 5;
+    particles.stress[5] = 6;
+    particles.stress[6] = 7;
+    particles.stress[7] = 8;
+    particles.stress[8] = 9; */
+
     Logger(INFO) << "   >   calc partial derivatives of v with respect to x...";
     particles.compPartialVs();
+    /* particles.partialV[0] = 1;
+    particles.partialV[1] = 2;
+    particles.partialV[2] = 3;
+    particles.partialV[3] = 4;
+    particles.partialV[4] = 5;
+    particles.partialV[5] = 6;
+    particles.partialV[6] = 7;
+    particles.partialV[7] = 8;
+    particles.partialV[8] = 9;
+
+    particles.S11[0] = 1;
+    particles.S12[0] = 2;
+    particles.S13[0] = 3;
+    particles.S22[0] = 4;
+    particles.S23[0] = 5; */
+
     Logger(INFO) << "   >   calc dS/dt...";
     particles.compdS();
 #endif
 
     Logger(INFO) << "   >   calc acc...";
     particles.compAcceleration();
+    /* particles.ax[0] = 1;
+    particles.ay[0] = 2;
+    particles.az[0] = 3; */
    
     Logger(INFO) << "   >   write initial distribution to file ...";
-    particles.write2file(config.outDir +"/timestep0" + std::string(".h5"));
+    particles.write2file(config.outDir +"/timestep0000" + std::string(".h5"));
     int counter = 1;
     Logger(INFO) << "   >   start integration...";
 
     double t = 0;
+    int writeCounter = 0;
 
     while ( t < config.timeEnd){
         
         Logger(INFO) << "   >   time: " << t;
-        doTimestepHeun(particles, config.smoothingLength, config.timeStep, config.smoothingLength);        
+        doTimestepHeun(particles, config.smoothingLength, config.timeStep, config.speedOfSound, config.restDensity, config.maxNN);        
         if(counter%config.h5DumpInterval == 0){
      
     //write particles to file
-    Logger(INFO) << "   >   write particles to file...";
-    particles.write2file(config.outDir+"/timestep" +  std::to_string(counter) + std::string(".h5"));
-
+    Logger(INFO) << "   >   write particles to file... timestep: " << counter;
+    std::string number = std::to_string(writeCounter);
+    number.insert(number.begin(), 4 - number.length(), '0');
+    
+    particles.write2file(config.outDir+"/timestep" + number + std::string(".h5"));
+    writeCounter++;
         }
     
     //update time

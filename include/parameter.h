@@ -6,6 +6,8 @@
 
 #define KERNEL_DIM 2
 
+#define NN 1 // decide if nearest neighbors of each particle are also written to file
+
 /* 0 calculate density via Kernel sum
    1 calculate density via continuity equation, then it is necessary to provide an inital density distribution */
 #define CALC_DENSITY 1            
@@ -20,5 +22,10 @@
 
 /* for simulating Solids set to 1, if 0 assuming gas*/
 #define SOLIDS 1
+
+/* use artificial viscosity or not */
+#define ARTIFICIAL_VISCOSITY 1
+
+#define DEBUG_LEVEL 1
 
 #endif // SPH_PARAMETER_H

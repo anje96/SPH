@@ -5,22 +5,25 @@ initFile rings.h5
 outDir output
 
 ; fixed time step
-timeStep .05
+timeStep .01
 
 ; end of the simulation
-timeEnd 5.
+timeEnd 20
 
 ; output particle distribution each h5DumpInterval steps
-h5DumpInterval 20
+h5DumpInterval 10
 
 ; Sound speed
 speedOfSound 1.
 
 ; smoothing length
-smoothingLength 0.15
+smoothingLength 0.3
 
-; density in relaxed state, ignored when SOLIDS not set in parameter.h5
-restDensity 100
+; density in relaxed state, should be zero for gas
+restDensity 1.0
+
+; maximum number of nearest neighbors
+maxNN 300
 
 ; shear modulus, ignored when SOLIDS not set in parameter.h
 shearModulus 0.22

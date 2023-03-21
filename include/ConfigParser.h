@@ -33,6 +33,7 @@ public:
         double speedOfSound;
         double smoothingLength;
         double restDensity;
+        int maxNN;
         double shearModulus;
     };
 

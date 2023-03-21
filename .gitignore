@@ -58,3 +58,7 @@ headeronly/*
 
 #test python
 postprocessing/test*.py
+
+output.txt
+
+initialDistributions/initTest.py

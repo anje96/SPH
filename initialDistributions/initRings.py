@@ -11,8 +11,8 @@ dim = 2
 r_inner = 3
 r_outer = 4
 
-#shift of the rings on x-axis
-shift = 5
+#shift of the rings from origin on x-axis
+shift = 4.16
 
 #particle spacing
 delta_p = 0.1
@@ -21,7 +21,8 @@ v_p = 0.059
 
 #want an initial Distribution, set density true
 density = True
-initial_density = 100 #mass of particles is set to one, particle spacing is 0.1, dim = 2
+initial_density = 1 #mass of particles is set to one, particle spacing is 0.1, dim = 2
+mass = 0.01
 
 #create initial distribution through creating a 2d grid with dims 2*r_outer x 2*r_outer, then delete particles which are not on the ring
 
@@ -33,13 +34,12 @@ N_square = int(N_length**2)
 
 #coordinates of particles in square
 r = np.zeros((N_square, dim))
-#print(r[0,0])
 
 
 
 #2D meshgrid
 a = np.mgrid[0:N_length, 0:N_length]
-#print(a[0,0,80])
+
 
 #create square 
 for i in range(dim):
@@ -53,12 +53,8 @@ for i in range(dim):
         r[j, i] = (a[i, k, j%N_length]-(N_length-1)/2)*delta_p
     
 
-""" plt.figure()
-plt.plot(r[:, 0], r[:, 1], '.')
-plt.show() """
-#print(r[:, 0])
 
-# count particles in ring
+# count particles in one ring
 N= 0
 arr = np.zeros(N_square) 
 for i in range(N_square):
@@ -67,39 +63,41 @@ for i in range(N_square):
         N += 1
         arr[i] = 1
 
-#print(N)
+#construct two rings with N particles which then are shifted along the x-axis
 r_ring = np.zeros((N, dim+1))
 r_ring2 = np.zeros((N, dim+1))
 v = np.zeros((N, dim+1))
 v2 = np.zeros((N, dim+1))
-m = np.ones(2*N)
+
+m = np.ones(2*N)*mass # 2N because of two rings
 rho = np.ones(2*N)*initial_density
 
+#create ring 1
 counter = 0
 for i in range(N_square):
     if(arr[i]== 1):
-        r_ring[counter, 0] = r[i,0] + shift
+        r_ring[counter, 0] = r[i,0] + 4.1
         r_ring[counter, 1] = r[i, 1]
         r_ring[counter, 2] = 0
-        v[counter, 0] = -v_p
+        v[counter, 0] = v_p
         counter += 1
 
+#create ring 2
 counter = 0
 for i in range(N_square):
     if(arr[i]== 1):
-        r_ring2[counter, 0] = r[i,0] - shift
+        r_ring2[counter, 0] = r[i,0] + 12.42
         r_ring2[counter, 1] = r[i, 1]
         r_ring2[counter, 2] = 0
-        v2[counter, 0] = v_p
+        v2[counter, 0] = -v_p
         counter += 1
 
 
-   
+# put two rings in one array 
+print(r_ring.shape, r_ring2.shape)
 r_final = np.concatenate((r_ring, r_ring2))
 v_final = np.concatenate((v, v2))
-""" plt.figure()
-plt.plot(r_final[:, 0], r_final[:, 1], '.')
-plt.show() """
+print(r_final.shape)
 
 h5f = h5py.File("rings.h5", "w")
 print("Saving to rings.h5 ...")

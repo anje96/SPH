@@ -11,15 +11,17 @@
 
 class Particles{
     public: 
-        Particles(int NumParticles, double smoothingLength);
+        Particles(int NumParticles, double smoothingLength, double speedOfSound, int maxNearestNeighbors);
 
         ~Particles();
 
-        int N;
+        int N, maxNN; // maxNN is the max number of nearest neighbors
         double sml;
         double *m, *x, *y, *z, *vx, *vy, *vz, *rho, *drho, *p, *ax, *ay, *az;
+        int *iCounter; //counts interactions of the particles
         int *NNsquare;
         double rhoRel; // density in relaxed state
+        double c_s; // speed of sound
 
         void setRho_0(double rho_0Set);
 
@@ -37,6 +39,8 @@ class Particles{
         // TO DO: add further variables needed
         // set parameters
         void setMu(double muSet);
+        int indexSigma(int pCounter, int i , int j);
+        int indexMatrix(int i, int j);
 
         /*calc Stress tensor for every particle */
           
@@ -47,6 +51,18 @@ class Particles{
         // calc time derivatives of deviatoric stress tensor
         void compdS();
         
+#endif
+
+#if ARTIFICIAL_VISCOSITY 
+        /* free parameters of artificial viscosity*/
+        double alpha = 1; 
+        double beta = 2*alpha;
+
+        // no divergence for artificial viscosity
+        double epsilon = 0.1;
+
+        // calc artificial viscosity term for particle pCounter and neighbor
+        double compArtificialVisc( int pCounter, int neighbor);
 #endif
 
 
@@ -64,7 +80,7 @@ class Particles{
         /*compute pressure of all particles, dependent of sound speed c_s
         for gases: p = c_s^2*rho 
         for solids: p = c_s^2*(rho - rho_O), rho_0 density in relaxed state*/
-        void compPressure(double c_s);
+        void compPressure();
 
         //comp acceleration of all particles
         void compAcceleration();

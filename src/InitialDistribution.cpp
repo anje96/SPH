@@ -76,5 +76,6 @@ void InitialDistribution::getAllParticles(Particles &particles){
 
 
     }
+    //printf("particle Counter in Initial Distribution: %d ", pCounter);
 
 }
