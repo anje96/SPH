@@ -6,6 +6,6 @@
 
 double cubicSpline(double xi, double yi, double zi, double xj, double yj, double zj, double sml);
 
-double* gradCubicSpline(double xi, double yi, double zi, double xj, double yj, double zj, double sml);
+void gradCubicSpline(double xi, double yi, double zi, double xj, double yj, double zj, double sml, double *grad);
 
 #endif // SPH_KERNEL_H

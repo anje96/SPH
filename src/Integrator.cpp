@@ -12,22 +12,10 @@ void doTimestep(Particles &particles, double smoothingLength, double deltaT, dou
         particles2.y[pCounter] = particles.y[pCounter] + deltaT*particles.vy[pCounter]/2;;
         particles2.z[pCounter] = particles.z[pCounter] + deltaT*particles.vz[pCounter]/2;;
 
-         /*    for( int i=0; i< numParticles; i++){
-        std::cout << particles2.x[i] << "  " << particles2.y[i] << "   " << particles2.z[i] << "\n";
-        
-        }
-        std::cout << "\n ";
- */
         //v(t + deltaT/2) = v(t)+ deltaT/2 *a(t)
         particles2.vx[pCounter] = particles.vx[pCounter] + deltaT * particles.ax[pCounter]/2;
         particles2.vy[pCounter] = particles.vy[pCounter] + deltaT * particles.ay[pCounter]/2;
         particles2.vz[pCounter] = particles.vz[pCounter] + deltaT * particles.az[pCounter]/2;
-
-        /*  for( int i=0; i< numParticles; i++){
-        std::cout << particles2.vx[i] << "  " << particles2.vy[i] << "   " << particles2.vz[i] << "\n";
-        
-        }
-        std::cout << "\n "; */
 
         //copy masses accordingly
         particles2.m[pCounter] = particles.m[pCounter];
@@ -36,29 +24,11 @@ void doTimestep(Particles &particles, double smoothingLength, double deltaT, dou
     // update state variable and acceleration of second set of particles
     particles2.compNNSquare();
     particles2.compDensity();
-   /*  std::cout << "Density: " << std::endl;
-    for( int i=0; i< numParticles; i++){
-        std::cout << particles2.rho[i] << "\n";
-        
-    }
-    std::cout << "\n "; */
 
     particles2.compPressure();
 
-    /* std::cout << "Pressure: " << std::endl;
-    for( int i=0; i< numParticles; i++){
-        std::cout << particles2.p[i] <<  "\n";
-        
-    }
-    std::cout << "\n "; */
     particles2.compAcceleration();
 
-    /* std::cout << "Acceleration: " << std::endl;
-        for( int i=0; i< numParticles; i++){
-        std::cout << particles2.ax[i] << "  " << particles2.ay[i] << "   " << particles2.az[i] << "\n";
-        
-    }
-    std::cout << "\n "; */
 
     // update main set of particles
 
@@ -112,6 +82,10 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
 
     predParticles.setRho_0(rho_0);
         // calc predicted density via continuity equation
+#if SOLIDS
+    predParticles.setMu(particles.mu);
+#endif
+
 #if CALC_DENSITY == 1
         predParticles.rho[pCounter] = particles.rho[pCounter] + deltaT* particles.drho[pCounter];
 #if DEBUG_LEVEL == (1 || 2)
@@ -135,9 +109,7 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
     predParticles.S22[pCounter] = particles.S22[pCounter] + deltaT* particles.dS22[pCounter];
     predParticles.S23[pCounter] = particles.S23[pCounter] + deltaT* particles.dS23[pCounter];
     #endif
-        if(pCounter == 4391){
-            printf(" Predicted particles r,v,rho,S updated \n");
-        }
+   
      }
      if(prednegativeDensity){
         Logger(WARN) << " Density somewhere negative predicted Particles...";
@@ -226,9 +198,7 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
         particles.S22[pCounter] = predParticles.S22[pCounter] + 0.5* deltaT*(predParticles.dS22[pCounter]- particles.dS22[pCounter]);
         particles.S23[pCounter] = predParticles.S23[pCounter] + 0.5* deltaT*(predParticles.dS23[pCounter]- particles.dS23[pCounter]);
 #endif
-    if(pCounter == 4391){
-            printf(" particles r,v,rho,S updated \n");
-        }
+ 
     }
     if(negativeDensity){
         Logger(WARN) << " Density somewhere negative...";
@@ -243,8 +213,6 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
         Logger(WARN) << " v nan somewhere...";
     }
     
-    
-
     particles.compNNSquare();
     
 #if CALC_DENSITY == 0

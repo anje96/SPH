@@ -34,7 +34,7 @@ int main(int argc, char** argv){
     Logger(INFO) << "Reading configuration ... ";
     ConfigParser::Configuration config; // initialize configuration
 
-    config.initFile = confP.getVal<std::string>("initFile"); 
+    config.initFile = confP.getVal<std::string>("initFile");  
     Logger(INFO) << "   >   Initial distribution: " << config.initFile;
     config.outDir = confP.getVal<std::string>("outDir");
     Logger(INFO) << "   >   Output directory: " << config.outDir;
@@ -98,33 +98,10 @@ int main(int argc, char** argv){
 #if SOLIDS
     Logger(INFO) << "   >   calc stress...";
     particles.compStress();
-/*  particles.stress[0] = 1;
-    particles.stress[1] = 2;
-    particles.stress[2] = 3;
-    particles.stress[3] = 4;
-    particles.stress[4] = 5;
-    particles.stress[5] = 6;
-    particles.stress[6] = 7;
-    particles.stress[7] = 8;
-    particles.stress[8] = 9; */
+
 
     Logger(INFO) << "   >   calc partial derivatives of v with respect to x...";
     particles.compPartialVs();
-    /* particles.partialV[0] = 1;
-    particles.partialV[1] = 2;
-    particles.partialV[2] = 3;
-    particles.partialV[3] = 4;
-    particles.partialV[4] = 5;
-    particles.partialV[5] = 6;
-    particles.partialV[6] = 7;
-    particles.partialV[7] = 8;
-    particles.partialV[8] = 9;
-
-    particles.S11[0] = 1;
-    particles.S12[0] = 2;
-    particles.S13[0] = 3;
-    particles.S22[0] = 4;
-    particles.S23[0] = 5; */
 
     Logger(INFO) << "   >   calc dS/dt...";
     particles.compdS();
@@ -132,9 +109,6 @@ int main(int argc, char** argv){
 
     Logger(INFO) << "   >   calc acc...";
     particles.compAcceleration();
-    /* particles.ax[0] = 1;
-    particles.ay[0] = 2;
-    particles.az[0] = 3; */
    
     Logger(INFO) << "   >   write initial distribution to file ...";
     particles.write2file(config.outDir +"/timestep0000" + std::string(".h5"));

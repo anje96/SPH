@@ -8,10 +8,10 @@ outDir output
 timeStep .01
 
 ; end of the simulation
-timeEnd 20
+timeEnd 100
 
 ; output particle distribution each h5DumpInterval steps
-h5DumpInterval 10
+h5DumpInterval 50
 
 ; Sound speed
 speedOfSound 1.

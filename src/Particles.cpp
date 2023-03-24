@@ -1,11 +1,11 @@
-#include "../include/Particles.h" 
+#include "Particles.h" 
 #include "Kernel.h"
 
 Particles::Particles( int NumParticles, double smoothingLength, double speedOfSound, int maxNearestNeighbors) {
-    // default initialization is zero
+   
     x = new double[NumParticles];
     y = new double[NumParticles];
-    z = new double[NumParticles];
+    z = new double[NumParticles]; 
     vx = new double[NumParticles];
     vy = new double[NumParticles];
     vz = new double[NumParticles];
@@ -86,7 +86,7 @@ Particles::~Particles(){
 #endif
 
 };
-
+ 
 // setting functions
 #if SOLIDS
 void Particles::setMu(double muSet){
@@ -142,22 +142,16 @@ void Particles::compNNSquare(){
             else{
                 if((xmin <= x[nCounter] && x[nCounter] <= xmax) && (ymin <= y[nCounter] && y[nCounter] <= ymax) && (zmin <= z[nCounter] && z[nCounter] <= zmax)){
                     NNsquare[pCounter * maxNN + NNCounter] = nCounter;
-                    NNCounter++;
+                    ++NNCounter;
 
                 }
 
             }
             
-         /*    if(nCounter == 4391){
-            printf( " All neighbors update 1 \n");
-        } */
         }
 
         iCounter[pCounter] = NNCounter;
 
-        if(pCounter == 4391){
-            printf( " All neighbors update 2 \n");
-        }
    }
 
 #if DEBUG_LEVEL == 2
@@ -204,29 +198,32 @@ void Particles::compDensity(){
 };
 
 void Particles::compDrho(){
-    for( int pCounter =0; pCounter < N; pCounter++){
-        //printf("in der schleife pCounter: %d \n", pCounter);
+    
+     for( int pCounter =0; pCounter < N; pCounter++){
+     
         int numberOfNN = 0;
         int neighbor = 0;
 
         // set change to zero
         double drhoTemp = 0.0;
-        double* gradKernel;
+        
+        double gradKernel[DIM] = {0,0,0};
+        
         double deltaVx;
         double deltaVy;
         double deltaVz;
 
         neighbor = NNsquare[ maxNN * pCounter + numberOfNN];
-        //printf(" got first neighbor \n");
+       
         while( neighbor != -1 && numberOfNN < maxNN){
-            //printf(" in while loop time: %d \n", numberOfNN);
-            gradKernel = gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml);
+            
+            gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml, gradKernel);
             deltaVx = vx[pCounter]- vx[neighbor];
             deltaVy = vy[pCounter]- vy[neighbor];
             deltaVz = vz[pCounter]- vz[neighbor];
             
             drhoTemp += m[neighbor]*(deltaVx*gradKernel[0] + deltaVy*gradKernel[1] + deltaVz*gradKernel[2])/rho[neighbor];
-            numberOfNN++;
+            ++numberOfNN;
             
             if(numberOfNN < maxNN){
                 neighbor = NNsquare[ maxNN * pCounter + numberOfNN];
@@ -237,11 +234,9 @@ void Particles::compDrho(){
         }
         
         drho[pCounter] = rho[pCounter]*drhoTemp;     
-        if(pCounter == 4391){
-            printf( " drho update 1 \n");
-        }   
+      
                
-    }
+    } 
     
 };
 
@@ -250,15 +245,14 @@ void Particles::compPressure(){
     bool negativePressure = false;
     for( int pCounter = 0; pCounter < N; pCounter++){
         p[pCounter] = c_s*c_s*(rho[pCounter] - rhoRel);
+       
         if(std::isnan(p[pCounter]) ) {
                 Logger(WARN) <<" >  pressure is nan, particle: " << pCounter;
             }
         if(p[pCounter] < 0) {
                 negativePressure = true;
             }
-            if(pCounter == 4391){
-            printf( " pressure updated \n");
-        }
+        
     }
     /* if( negativePressure){
         Logger(WARN) <<" >  pressure is negative somewhere ";
@@ -270,10 +264,9 @@ void Particles::compPressure(){
     // Calc stress tensor for every particle
     void Particles::compStress(){
         for( int pCounter = 0;  pCounter < N; pCounter++){
-            //double S_ij[DIM*DIM] = {S11[pCounter], S12[pCounter], S13[pCounter], S12[pCounter], S22[pCounter], S23[pCounter]
-            //, S13[pCounter], S23[pCounter], -(S11[pCounter]+S22[pCounter]) };
-            double S_ij[DIM*DIM] = {0,0,0,0,0,0,0,0,0};
-            //std::cout <<  "S11:  "<< S_ij[0] << "  ";
+            double S_ij[DIM*DIM] = {S11[pCounter], S12[pCounter], S13[pCounter], S12[pCounter], S22[pCounter], S23[pCounter]
+            , S13[pCounter], S23[pCounter], -(S11[pCounter]+S22[pCounter]) };
+           
             for( int i = 0; i < DIM; i++){
                 for(int j = 0; j < DIM; j++){
                     if(i == j){
@@ -289,9 +282,7 @@ void Particles::compPressure(){
                     
                 }
             }
-             if(pCounter == 4391){
-            printf( " stress updated \n");
-        }
+        
        }
    
     };
@@ -307,7 +298,7 @@ void Particles::compPartialVs(){
     for( int pCounter = 0; pCounter < N; pCounter++){
         int numberOfNN = 0;
         int neighbor = 0;
-        double* gradKernel;
+        double gradKernel[DIM] = {0,0,0};
 
         double vParticle[DIM]  = {vx[pCounter], vy[pCounter], vz[pCounter]};
 
@@ -315,7 +306,7 @@ void Particles::compPartialVs(){
         
         // loop over nearest neighbors of each particle to calc dvi/dxj
         while(neighbor != -1 && numberOfNN < maxNN){
-            gradKernel = gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml);
+            gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml, gradKernel);
             double vNeighbor[DIM] = {vx[neighbor], vy[neighbor], vz[neighbor]};
 
             for( int i = 0; i < DIM; i++){
@@ -330,9 +321,6 @@ void Particles::compPartialVs(){
 
         } 
         // go to next particle
-             if(pCounter == 4391){
-            printf( " partial Vs updated \n");
-        }
 
     }
 };
@@ -343,7 +331,7 @@ void Particles::compdS(){
         
         double S_ij[DIM*DIM] = {S11[pCounter], S12[pCounter], S13[pCounter], S12[pCounter], S22[pCounter], S23[pCounter]
             , S13[pCounter], S23[pCounter], -(S11[pCounter]+S22[pCounter]) }; // deviatoric stress tensor
-            //std::cout <<  "S11:  "<< S_ij[0] << "  ";
+            
 
         double epsilon[DIM*DIM]; // strain rate tensor
         double omega[DIM*DIM]; // rotation rate tensor
@@ -369,10 +357,6 @@ void Particles::compdS(){
             dS13[pCounter] += S_ij[indexMatrix(0,k)]*omega[indexMatrix(2,k)] + omega[indexMatrix(0,k)]* S_ij[indexMatrix(k,2)];
             dS23[pCounter] += S_ij[indexMatrix(1,k)]*omega[indexMatrix(2,k)] + omega[indexMatrix(1,k)]* S_ij[indexMatrix(k,2)];
         }
-             if(pCounter == 4391){
-            printf( " dS updated \n");
-        }
-
 
     }
 
@@ -407,12 +391,12 @@ void Particles::compdS(){
         }
         else{
             double mu_ij = sml* vr_ij/(r_ij+ epsilon*sml*sml);
-            //printf("mu_ij: %f, sml: %f, vr_ij: %f, r_ih: %f, epsilon: %f, deltaVx: %f, deltaVy: %f, deltaVz: %f", mu_ij, sml, vr_ij, r_ij, epsilon, deltaVx, deltaVy, deltaVz);
+            
             if(std::isinf(mu_ij)){
                 Logger(WARN) << "mu_ij is +- inf";
             }
             P_ij = (-alpha*c_s*mu_ij+ beta* mu_ij*mu_ij) / (0.5*(rho[pCounter]+rho[neighbor]));
-            //printf("alpha: %f, beta: %f, mu_ij: %f, c_s: %f, rho particle: %f, rho neighbor: %f , neighbor: %d, particle: %d", alpha, beta, mu_ij, c_s,rho[pCounter],rho[neighbor], pCounter, neighbor );
+            
             return P_ij;
         }
 
@@ -425,7 +409,8 @@ void Particles::compdS(){
 void Particles::compAcceleration(){
     // iterate over all particles
     
-    for( int pCounter =0; pCounter < N; pCounter++){
+     for( int pCounter =0; pCounter < N; pCounter++){
+
         bool artiViscIsnan = false;
         int numberOfNN = 0;
         int neighbor = 0;
@@ -434,9 +419,8 @@ void Particles::compAcceleration(){
         double ayTemp = 0;
         double azTemp = 0;
 
-        
+        double gradKernel[DIM] = {0,0,0};
 
-        double* gradKernel;
 #if SOLIDS
         double dV[DIM] = {0,0,0};
 #else
@@ -444,48 +428,63 @@ void Particles::compAcceleration(){
 #endif
 
         neighbor = NNsquare[ maxNN * pCounter + numberOfNN];
+
+
         // sum over nearest neighbors (while- loop)
         while( neighbor != -1 && numberOfNN < maxNN){
+           
 
 #if ARTIFICIAL_VISCOSITY
-        double P_ij = compArtificialVisc(pCounter, neighbor);
-        if(std::isnan(P_ij)){
-            Logger(WARN) << "Artificial viscosity is nan";
-            artiViscIsnan = true;
-            
-        }
+            double Pi_ij = compArtificialVisc(pCounter, neighbor);
+
+            if(std::isnan(Pi_ij)){
+                Logger(WARN) << "Artificial viscosity is nan";
+                artiViscIsnan = true;
+                
+            }
 #endif
 
 #if SOLIDS
-            gradKernel = gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml);
+            // has to be set to zero for every neighbor
+            dV[0] = 0;
+            dV[1] = 0;
+            dV[2] = 0;
+            
+            gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml, gradKernel);
+
             // calc dv_i for one neighbor with sum over stress tensor
             for( int i = 0; i < DIM; i++){
+                
                 for( int j = 0; j < DIM; j++){
                     dV[i] += (stress[indexSigma(pCounter, i, j)]/(rho[pCounter]*rho[pCounter]) + 
                     stress[indexSigma(neighbor, i, j)]/( rho[neighbor]*rho[neighbor]))*gradKernel[j];
+
                     if(std::isnan(dV[i])){
                         Logger(WARN) << " dV for i,j nan" << i << ", "<< j;
                     }
 
 #if ARTIFICIAL_VISCOSITY
+                    // add artificial viscosity
                     if(i == j){
-                        dV[i] += -P_ij*gradKernel[j];
-                        if(std::isnan(P_ij)){
-                            Logger(WARN) << "P_ij nan: " << P_ij;
+                        dV[i] += -Pi_ij*gradKernel[j];
+
+                        // check for NaNs
+                        if(std::isnan(Pi_ij)){
+                            Logger(WARN) << "Pi_ij nan: " << Pi_ij;
                         }
                         if(std::isnan(gradKernel[j])){
                             Logger(WARN) << "Kernel nan: " << gradKernel[j];
                         }
-                        if(std::isnan(gradKernel[j]*P_ij)){
-                            Logger(WARN) << "Kernel* P_ij nan: " << gradKernel[j] << " P_ij" <<  P_ij;
+                        if(std::isnan(gradKernel[j]*Pi_ij)){
+                            Logger(WARN) << "Kernel* Pi_ij nan: " << gradKernel[j] << " P_ij" <<  Pi_ij;
                         }
                         if(std::isnan(dV[i])){
                         Logger(WARN) << " dV for i,j nan with artificial viscosity" << i << ", " << j;
                     }
-                    }
-#endif
-                   /*  dV[i] += (stress[indexSigma(pCounter, i, j)]+stress[indexSigma(neighbor, i, j)])/(rho[pCounter]*rho[neighbor]) 
-                    *gradKernel[j];  */
+                 }
+#endif// ARTIFICIAL VISCOSITY
+                   //  dV[i] += (stress[indexSigma(pCounter, i, j)]+stress[indexSigma(neighbor, i, j)])/(rho[pCounter]*rho[neighbor]) 
+                    // *gradKernel[j];  
                     
                 }
             }
@@ -496,28 +495,29 @@ void Particles::compAcceleration(){
             azTemp += m[neighbor]* dV[2];
 
 
-#else
-            /*1st Version of SPH equation*/
+#else //SOLIDS == 0
+            //1st Version of SPH equation
             //prefactor = - m[neighbor] *(p[neighbor]+p[pCounter])/(rho[pCounter]*rho[neighbor]);
 
-            /* 2nd Version of SPH equation*/
+            // 2nd Version of SPH equation
             prefactor = -m[neighbor]* (p[neighbor]/(rho[neighbor]*rho[neighbor]) + p[pCounter]/(rho[pCounter]*rho[pCounter]));
 
 #if ARTIFICIAL_VISCOSITY
-            prefactor += -m[neighbor]*P_ij;
-#endif
-            
+            prefactor += -m[neighbor]*Pi_ij;
+#endif // ARTIFICIAL_VISCOSITY
             
             gradKernel = gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml);
-            
             
             axTemp += prefactor*gradKernel[0];
             ayTemp += prefactor*gradKernel[1];
             azTemp += prefactor*gradKernel[2];
-#endif           
+#endif // SOLIDS
+
             numberOfNN++;
-            neighbor = NNsquare[ maxNN * pCounter + numberOfNN];
-        }
+            neighbor = NNsquare[ maxNN * pCounter + numberOfNN]; // get next neighbors
+
+        } // end of while-loop
+
         if(artiViscIsnan){
             Logger(WARN) << "artificial viscosity nan somewhere... ";
         }
@@ -527,16 +527,14 @@ void Particles::compAcceleration(){
                 //printf("ax: %f, ay: %f, az: %f \n", axTemp, ayTemp ,azTemp);
                 //printf(" artificial vis: %f :" , P_ij)
             }
+
         // write new accelerations 
         ax[pCounter] = axTemp;
         ay[pCounter] = ayTemp;
         az[pCounter] = azTemp;       
-             if(pCounter == 4391){
-            printf( " acc updated \n");
-        }
                
-    }
-
+    } // end of for-loop
+ 
 };
 
 void Particles::write2file(std::string filename){
@@ -635,9 +633,6 @@ void Particles::write2file(std::string filename){
         accBuf[2] = az[i];
 #endif
         accVec[i] = accBuf;
-             if(i == 4391){
-            printf( " r,v,a written down \n");
-        }
 
     }
 

@@ -2,12 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 
-#
-
-#Dim
+"this program creates two 2-D rings around the origin which are then shifted to their final position"
+#Dim of Rings
 dim = 2
 
-#ring properties
+#ring properties: inner and outer radius
 r_inner = 3
 r_outer = 4
 
@@ -21,25 +20,22 @@ v_p = 0.059
 
 #want an initial Distribution, set density true
 density = True
-initial_density = 1 #mass of particles is set to one, particle spacing is 0.1, dim = 2
+initial_density = 1 #mass of particles is set to 0.01, particle spacing is 0.1, dim = 2, 
 mass = 0.01
 
 #create initial distribution through creating a 2d grid with dims 2*r_outer x 2*r_outer, then delete particles which are not on the ring
 
 #calc number of particles within square
 N_length = int(2*r_outer/delta_p)
-#print(N_length)
+#number of particles in square
 N_square = int(N_length**2)
-
 
 #coordinates of particles in square
 r = np.zeros((N_square, dim))
 
 
-
 #2D meshgrid
 a = np.mgrid[0:N_length, 0:N_length]
-
 
 #create square 
 for i in range(dim):
@@ -64,8 +60,8 @@ for i in range(N_square):
         arr[i] = 1
 
 #construct two rings with N particles which then are shifted along the x-axis
-r_ring = np.zeros((N, dim+1))
-r_ring2 = np.zeros((N, dim+1))
+r_ring = np.zeros((N, dim+1)) # first ring
+r_ring2 = np.zeros((N, dim+1)) # second ring
 v = np.zeros((N, dim+1))
 v2 = np.zeros((N, dim+1))
 
@@ -76,20 +72,20 @@ rho = np.ones(2*N)*initial_density
 counter = 0
 for i in range(N_square):
     if(arr[i]== 1):
-        r_ring[counter, 0] = r[i,0] + 4.1
+        r_ring[counter, 0] = r[i,0] + 12.42
         r_ring[counter, 1] = r[i, 1]
         r_ring[counter, 2] = 0
-        v[counter, 0] = v_p
+        v[counter, 0] = -v_p
         counter += 1
 
 #create ring 2
 counter = 0
 for i in range(N_square):
     if(arr[i]== 1):
-        r_ring2[counter, 0] = r[i,0] + 12.42
+        r_ring2[counter, 0] = r[i,0] + 4.1
         r_ring2[counter, 1] = r[i, 1]
         r_ring2[counter, 2] = 0
-        v2[counter, 0] = -v_p
+        v2[counter, 0] = v_p
         counter += 1
 
 

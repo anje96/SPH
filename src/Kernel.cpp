@@ -35,7 +35,7 @@ double cubicSpline(double xi, double yi, double zi, double xj, double yj, double
 
 
 // calc gradient of Cubic Spline Kernel
-double* gradCubicSpline(double xi, double yi, double zi, double xj, double yj, double zj, double sml){
+void gradCubicSpline(double xi, double yi, double zi, double xj, double yj, double zj, double sml, double *grad){
     // one h
     double xij = xi - xj;
     double yij = yi - yj;
@@ -63,13 +63,10 @@ double* gradCubicSpline(double xi, double yi, double zi, double xj, double yj, d
         gradW = 3*rh*rh-2*rh;
     }
     gradW = gradW*prefactor;
-
-    static double gradWvec[DIM]; //static necessary
-
-    gradWvec[0] = gradW* xij/rij;
-    gradWvec[1] = gradW* yij/rij;
-    gradWvec[2] = gradW* zij/rij;
+  
+    grad[0] = gradW* xij/rij;
+    grad[1] = gradW* yij/rij;
+    grad[2] = gradW* zij/rij;
 
     
-    return gradWvec;
 }
