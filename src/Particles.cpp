@@ -46,6 +46,10 @@ Particles::Particles( int NumParticles, double smoothingLength, double speedOfSo
 
 #endif
 
+#if COURANT_CONDITION
+    mu_max = 0.0;
+#endif
+
     /* to store index of nearest neighbors of each particle
         access via index = NumParticles * X + Y
         X indicating particle index and Y stores the index of nearest neighbor particle, if -1 no nearest neighbor
@@ -92,13 +96,6 @@ Particles::~Particles(){
 void Particles::setMu(double muSet){
     mu = muSet;
 };
-#endif
-
-void Particles::setRho_0(double rho_0Set){
-   rhoRel = rho_0Set;
-};
-
-//helper functions
 
 // returns corresponding indices for sigma_ij of particle pCounter
 // or dv_i/dx_j for particle pCounter 
@@ -109,6 +106,15 @@ int Particles::indexSigma(int pCounter, int i , int j){
 int Particles::indexMatrix(int i, int j){
     return i*DIM+j;
 }
+#endif
+
+void Particles::setRho_0(double rho_0Set){
+   rhoRel = rho_0Set;
+};
+
+//helper functions
+
+
 
 // find nearest neighbor of each particle in cube with side length equal to smoothing length and write them into NNsquare
 void Particles::compNNSquare(){
@@ -389,17 +395,61 @@ void Particles::compdS(){
         if(vr_ij >= 0){
             return P_ij;
         }
-        else{
-            double mu_ij = sml* vr_ij/(r_ij+ epsilon*sml*sml);
-            
+        else{  
+            double mu_ij = sml* vr_ij/(r_ij+ epsilon*sml*sml);   
+
             if(std::isinf(mu_ij)){
                 Logger(WARN) << "mu_ij is +- inf";
-            }
+            } 
             P_ij = (-alpha*c_s*mu_ij+ beta* mu_ij*mu_ij) / (0.5*(rho[pCounter]+rho[neighbor]));
-            
             return P_ij;
         }
 
+
+    };
+#endif
+
+#if ARTIFICIAL_STRESS
+    void Particles::compRij(int pCounter, int neighbor, double* R_ab ){
+#if SOLIDS
+        // R_ab = R_a + R_b
+        double R_a[DIM*DIM] = {0,0,0,0,0,0,0,0,0};
+        double R_b[DIM*DIM] = {0,0,0,0,0,0,0,0,0};
+
+        for(int i = 0; i < DIM; i++){
+            for(int j = 0; j < DIM; j++){
+                if( stress[indexSigma(pCounter, i,j)] > 0){
+                    R_a[indexMatrix(i,j)] = -epsilonAS * stress[indexSigma(pCounter, i,j)] /(rho[pCounter]*rho[pCounter]);
+                }
+                if( stress[indexSigma(neighbor, i,j)] > 0){
+                    R_b[indexMatrix(i,j)] = -epsilonAS * stress[indexSigma(neighbor, i,j)] /(rho[neighbor]*rho[neighbor]);
+                }
+                
+                R_ab[indexMatrix(i,j)] = R_a[indexMatrix(i,j)] + R_b[indexMatrix(i,j)];
+
+            }
+        }
+#else
+        double R_a = 0;
+        double R_b = 0;
+
+        if(p[pCounter]< 0){
+            R_a = epsilonAS*abs(p[pCounter])/ (rho[pCounter]*rho[pCounter]);
+        }
+        if(p[neighbor]< 0){
+            R_b = epsilonAS*abs(p[neighbor])/ (rho[neighbor]*rho[neighbor]);
+        }
+        R_ab[0] = R_a + R_b;
+
+#endif
+
+    };
+
+    double Particles::compFn(int pCounter, int neighbor){
+        double fn = 0;
+        fn = (cubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml)/(cubicSpline(deltaP, sml)));
+        fn = pow(fn,n);
+        return fn;  
 
     };
 #endif
@@ -432,7 +482,7 @@ void Particles::compAcceleration(){
 
         // sum over nearest neighbors (while- loop)
         while( neighbor != -1 && numberOfNN < maxNN){
-           
+       
 
 #if ARTIFICIAL_VISCOSITY
             double Pi_ij = compArtificialVisc(pCounter, neighbor);
@@ -444,6 +494,11 @@ void Particles::compAcceleration(){
             }
 #endif
 
+#if ARTIFICIAL_STRESS
+        double fn = compFn(pCounter, neighbor); // needed for Solids and gases/liquids
+
+#endif
+
 #if SOLIDS
             // has to be set to zero for every neighbor
             dV[0] = 0;
@@ -452,12 +507,21 @@ void Particles::compAcceleration(){
             
             gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml, gradKernel);
 
+#if ARTIFICIAL_STRESS
+            double R_ij[DIM*DIM] = {0,0,0,0,0,0,0,0,0};
+            compRij(pCounter, neighbor, R_ij);
+#endif
+
             // calc dv_i for one neighbor with sum over stress tensor
             for( int i = 0; i < DIM; i++){
                 
                 for( int j = 0; j < DIM; j++){
                     dV[i] += (stress[indexSigma(pCounter, i, j)]/(rho[pCounter]*rho[pCounter]) + 
                     stress[indexSigma(neighbor, i, j)]/( rho[neighbor]*rho[neighbor]))*gradKernel[j];
+
+#if ARTIFICIAL_STRESS
+                    dV[i] += R_ij[indexMatrix(i,j)]*fn * gradKernel[j];
+#endif
 
                     if(std::isnan(dV[i])){
                         Logger(WARN) << " dV for i,j nan" << i << ", "<< j;
@@ -480,7 +544,7 @@ void Particles::compAcceleration(){
                         }
                         if(std::isnan(dV[i])){
                         Logger(WARN) << " dV for i,j nan with artificial viscosity" << i << ", " << j;
-                    }
+                        }
                  }
 #endif// ARTIFICIAL VISCOSITY
                    //  dV[i] += (stress[indexSigma(pCounter, i, j)]+stress[indexSigma(neighbor, i, j)])/(rho[pCounter]*rho[neighbor]) 
@@ -505,8 +569,14 @@ void Particles::compAcceleration(){
 #if ARTIFICIAL_VISCOSITY
             prefactor += -m[neighbor]*Pi_ij;
 #endif // ARTIFICIAL_VISCOSITY
+
+#if ARTIFICIAL_STRESS
+            double R_ij[1] = {0};
+            compRij(pCounter, neighbor, R_ij);
+            prefactor += -m[neighbor]* R_ij[0]*fn;
+#endif
             
-            gradKernel = gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml);
+            gradCubicSpline(x[pCounter], y[pCounter], z[pCounter], x[neighbor], y[neighbor], z[neighbor], sml, gradKernel);
             
             axTemp += prefactor*gradKernel[0];
             ayTemp += prefactor*gradKernel[1];
@@ -536,6 +606,63 @@ void Particles::compAcceleration(){
     } // end of for-loop
  
 };
+
+#if COURANT_CONDITION
+    double Particles::compTimestep(double timestep){
+        double maxStep = 0;
+#if ARTIFICIAL_VISCOSITY
+
+        double mu_max = std::numeric_limits<double>::min(); // smallest possible value for mu_max
+
+        for(int pCounter =0; pCounter < N; pCounter++){
+            int numberOfNN = 0;
+            int neighbor = NNsquare[ pCounter * maxNN + numberOfNN];
+
+            while(neighbor != -1 && neighbor < maxNN){
+
+                double deltaRx;
+                double deltaRy;
+                double deltaRz;
+                double deltaVx;
+                double deltaVy;
+                double deltaVz;
+
+                deltaRx = x[pCounter]- x[neighbor];
+                deltaRy = y[pCounter]- y[neighbor];
+                deltaRz = z[pCounter]- z[neighbor];
+
+                deltaVx = vx[pCounter]- vx[neighbor];
+                deltaVy = vy[pCounter]- vy[neighbor];
+                deltaVz = vz[pCounter]- vz[neighbor];
+
+                double r_ij = (deltaRx * deltaRx + deltaRy * deltaRy + deltaRz * deltaRz);
+                double vr_ij = (deltaRx * deltaVx + deltaRy * deltaVy + deltaRz * deltaVz);
+
+                double mu = sml* vr_ij/(r_ij+ epsilon*sml*sml);   
+                mu_max = mu_max < mu ? mu : mu_max;
+
+                // next neighbor
+                numberOfNN++;
+                neighbor = NNsquare[pCounter *maxNN + numberOfNN];
+
+            }
+        }
+        maxStep = CFL*sml/(c_s+ 1.2*(c_s*alpha + mu_max*beta));
+
+#else // no Artificial viscosity
+        maxStep = CFL*sml/c_s;
+
+#endif //ARTIFICIAL_VISCOSITY
+        if(maxStep < timestep){
+            return maxStep;
+        }
+        else{
+            return timestep;
+        }
+        
+    }
+
+#endif // COURANT_CONDITION
 
 void Particles::write2file(std::string filename){
     // open output file

@@ -9,7 +9,7 @@
 structlog LOGCFG = {};
 
 int main(int argc, char** argv){
-
+ 
     cxxopts::Options cmdLineOptions { "sph",
                                       "testcode for isothermal gas and solids" };
     cmdLineOptions.add_options()
@@ -76,12 +76,14 @@ int main(int argc, char** argv){
 
 
 
+// ab hier könnte alles in ein run scheme implementiert werden
+// TO-DO clarify Scheme class and integrator class - ask Johannes
+
+
+//
     Logger(INFO) << "   >   calc NN in cube... ";
     particles.compNNSquare();
-
-
-    
-
+ 
 #if CALC_DENSITY == 0 // Kernel sum
     Logger(INFO) << "   >   calc density... ";
     particles.compDensity();
@@ -117,24 +119,27 @@ int main(int argc, char** argv){
 
     double t = 0;
     int writeCounter = 0;
+    double timestep = config.timeStep;
+    timestep = particles.compTimestep(timestep);
 
     while ( t < config.timeEnd){
         
         Logger(INFO) << "   >   time: " << t;
-        doTimestepHeun(particles, config.smoothingLength, config.timeStep, config.speedOfSound, config.restDensity, config.maxNN);        
+        doTimestepHeun(particles, config.smoothingLength, timestep, config.speedOfSound, config.restDensity, config.maxNN);        
         if(counter%config.h5DumpInterval == 0){
      
-    //write particles to file
-    Logger(INFO) << "   >   write particles to file... timestep: " << counter;
-    std::string number = std::to_string(writeCounter);
-    number.insert(number.begin(), 4 - number.length(), '0');
-    
-    particles.write2file(config.outDir+"/timestep" + number + std::string(".h5"));
-    writeCounter++;
+            //write particles to file
+            Logger(INFO) << "   >   write particles to file... timestep: " << counter;
+            std::string number = std::to_string(writeCounter);
+            number.insert(number.begin(), 4 - number.length(), '0');
+            
+            particles.write2file(config.outDir+"/timestep" + number + std::string(".h5"));
+            writeCounter++;
         }
     
     //update time
-    t += config.timeStep;
+    timestep = particles.compTimestep(timestep);
+    t += timestep;
     counter++;
 
     }

@@ -33,6 +33,30 @@ double cubicSpline(double xi, double yi, double zi, double xj, double yj, double
     
 }
 
+double cubicSpline(double r, double sml){
+    double rij= r;
+    double rh = rij/sml;
+
+    double prefactor = 0.0;
+
+#if KERNEL_DIM == 3
+    prefactor = 8/(M_PI*pow(sml,KERNEL_DIM)); //depends on KERNEL_DIM
+#else //KERNEL_DIM == 2
+    prefactor = 40/(7*M_PI*sml*sml);
+#endif
+
+    if(rh > 1){
+        return 0.0;
+    }
+    else if (rh >= 0.5 && rh <= 1)
+    {
+        return 2*pow((1-rh), 3)*prefactor;
+    }
+    else{
+        return (6*pow(rh,3)-6*rh*rh +1)*prefactor;
+    }
+
+}
 
 // calc gradient of Cubic Spline Kernel
 void gradCubicSpline(double xi, double yi, double zi, double xj, double yj, double zj, double sml, double *grad){

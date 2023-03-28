@@ -2,9 +2,12 @@
 #define SPH_PARTICLES_H
 
 #include <iostream>
+#include <cmath>
+#include <limits>
 #include "Kernel.h"
 #include <highfive/H5File.hpp>
 #include "Logger.h"
+
 
 
 
@@ -22,6 +25,7 @@ class Particles{
         int *NNsquare;
         double rhoRel; // density in relaxed state
         double c_s; // speed of sound
+        
 
         void setRho_0(double rho_0Set);
 
@@ -53,16 +57,34 @@ class Particles{
         
 #endif
 
+
 #if ARTIFICIAL_VISCOSITY 
         /* free parameters of artificial viscosity*/
         double alpha = 1; 
         double beta = 2*alpha;
 
         // no divergence for artificial viscosity
-        double epsilon = 0.1;
+        double epsilon = 0.01;
 
         // calc artificial viscosity term for particle pCounter and neighbor
         double compArtificialVisc( int pCounter, int neighbor);
+#endif
+
+#if ARTIFICIAL_STRESS
+        //epsilon of artificial stress
+        double epsilonAS = 0.3;
+        // particle spacing
+        double deltaP = 0.1;
+        // for artificial stress term R_ab * f^n
+        int n = 6;
+        void compRij(int pCounter, int neighbor, double *R_ab);
+        double compFn(int pCounter, int neighbor);
+#endif
+
+#if COURANT_CONDITION
+    double compTimestep(double timestep);
+    double CFL = 0.4; //CFL-Number
+    double mu_max;
 #endif
 
 
