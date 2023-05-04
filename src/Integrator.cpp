@@ -1,3 +1,6 @@
+//
+// created by Anne Vera Jeschke December 2022
+//
 #include "Integrator.h"
 
 void doTimestep(Particles &particles, double smoothingLength, double deltaT, double c_s, double rho_0, int maxNearestNeighbors){

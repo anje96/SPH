@@ -66,8 +66,8 @@ for i in range(numPlots):
     #ax.set_zlim3d(-10, 10)
 
     #set ax limits 
-    ax.set_xlim(-0.5, 16.5)
-    ax.set_ylim(-8, 8)
+    ax.set_xlim(-5, 21) 
+    ax.set_ylim(0,16) #(-8, 8)
     ax.set_title('Timestep: {}'.format(time[i][0]))
     fig.colorbar(p)
 

@@ -1,3 +1,7 @@
+//
+// Created by Anne Vera Jeschke December 2022
+//
+
 #ifndef SPH_KERNEL_H
 #define SPH_KERNEL_H
 

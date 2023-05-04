@@ -1,3 +1,7 @@
+//
+// adapted from https://github.com/jammartin/meshlessHydro/blob/main/demonstrator/src/InitialDistribution.cpp
+// by Anne Vera Jeschke December 2022
+//
 #include "InitialDistribution.h" 
 
 

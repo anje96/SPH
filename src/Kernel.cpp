@@ -1,3 +1,6 @@
+//
+// created by Anne Vera Jeschke December 2022
+//
 #include <cmath>
 #include "Kernel.h"
 

@@ -1,3 +1,6 @@
+//
+// Created by Anne Vera Jeschke December 2022
+//
 #ifndef SPH_PARTICLES_H
 #define SPH_PARTICLES_H
 

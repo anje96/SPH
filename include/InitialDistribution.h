@@ -1,3 +1,5 @@
+// adapted from https://github.com/jammartin/meshlessHydro/blob/main/demonstrator/include/InitialDistribution.h
+// by Anne Vera Jeschke
 #ifndef SPH_INITIALDISTRIBUTION_H
 #define SPH_INITIALDISTRIBUTION_H
 

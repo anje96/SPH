@@ -1,3 +1,4 @@
+'created by Anne Vera Jeschke February 2023'
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py
@@ -72,8 +73,8 @@ rho = np.ones(2*N)*initial_density
 counter = 0
 for i in range(N_square):
     if(arr[i]== 1):
-        r_ring[counter, 0] = r[i,0] + 12.42
-        r_ring[counter, 1] = r[i, 1]
+        r_ring[counter, 0] = r[i,0] + 12.9
+        r_ring[counter, 1] = r[i, 1] + 8
         r_ring[counter, 2] = 0
         v[counter, 0] = -v_p
         counter += 1
@@ -83,7 +84,7 @@ counter = 0
 for i in range(N_square):
     if(arr[i]== 1):
         r_ring2[counter, 0] = r[i,0] + 4.1
-        r_ring2[counter, 1] = r[i, 1]
+        r_ring2[counter, 1] = r[i, 1] + 8
         r_ring2[counter, 2] = 0
         v2[counter, 0] = v_p
         counter += 1

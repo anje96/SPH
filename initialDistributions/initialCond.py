@@ -1,3 +1,4 @@
+'created by Anne Vera Jeschke January 2023'
 #create position, velocity and mass of particles in 3-D Grid
 import numpy as np
 import matplotlib.pyplot as plt

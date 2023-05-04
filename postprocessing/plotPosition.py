@@ -9,6 +9,7 @@ import glob
 
 
 " based on https://github.com/jammartin/ParaLoBstar/blob/main/tools/conservation/main.py"
+"adapted by Anne Vera Jeschke January 2023"
 
 if __name__ == "__main__":
 
