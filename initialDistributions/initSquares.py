@@ -59,20 +59,22 @@ rho = np.ones(2*N)*initial_density
 #create square 1
 
 for i in range(N_square):
-    r_ring[i, 0] = r[i,0] + 4.1 
+    r_ring[i, 0] = r[i,0] - 6.0
     r_ring[i, 1] = r[i, 1]
-    r_ring[i, 2] = 0
+    r_ring[i, 2] = 0.0
     v[i, 0] = v_p
+    v[i, 1] = 0.0
         
 
 #create ring 2
 
 for i in range(N_square):
     
-    r_ring2[i, 0] = r[i,0] + 12.42
+    r_ring2[i, 0] = r[i,0] + 6.0
     r_ring2[i, 1] = r[i, 1]
-    r_ring2[i, 2] = 0
+    r_ring2[i, 2] = 0.0
     v2[i, 0] = -v_p
+    v[i, 1] = 0.0
     
 
 # put two squares in one array 
@@ -80,6 +82,12 @@ print(r_ring.shape, r_ring2.shape)
 r_final = np.concatenate((r_ring, r_ring2))
 v_final = np.concatenate((v, v2))
 print(r_final.shape)
+
+#check symmetry
+print("sum over all x-values: ", np.sum(r_final[:, 0]))
+print("sum over all y-values: ", np.sum(r_final[:, 1]))
+print("sum over all vx-values: ", np.sum(v_final[:, 0]))
+print("sum over all vy-values: ", np.sum(v_final[:, 1]))
 
 h5f = h5py.File("squares.h5", "w")
 print("Saving to squares.h5 ...")

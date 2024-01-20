@@ -12,7 +12,7 @@ r_inner = 3
 r_outer = 4
 
 #shift of the rings from origin on x-axis
-shift = 4.16
+shift = 6  #4.16
 
 #particle spacing
 delta_p = 0.1
@@ -48,7 +48,8 @@ for i in range(dim):
         #print(i, k, j)
 
         r[j, i] = (a[i, k, j%N_length]-(N_length-1)/2)*delta_p
-    
+        if j == 5268 and i == 0:
+            print("r_ij: ", r[j,i], "(a[i, k, j%N_length]-(N_length-1)/2)*delta_p): ", a[i, k, j%N_length], " - ", (N_length-1)/2, "*", delta_p)
 
 
 # count particles in one ring
@@ -73,25 +74,31 @@ rho = np.ones(2*N)*initial_density
 counter = 0
 for i in range(N_square):
     if(arr[i]== 1):
-        r_ring[counter, 0] = r[i,0] + 12.9
-        r_ring[counter, 1] = r[i, 1] + 8
+        r_ring[counter, 0] = r[i,0] - shift #+ 12.9
+        if counter == 1683:
+            print(r_ring[counter, 0], r[i,0], shift, i)
+        r_ring[counter, 1] = r[i, 1] #+ 8
         r_ring[counter, 2] = 0
-        v[counter, 0] = -v_p
+        v[counter, 0] = v_p
         counter += 1
-
+print(r_ring[1683, 0])
 #create ring 2
 counter = 0
 for i in range(N_square):
     if(arr[i]== 1):
-        r_ring2[counter, 0] = r[i,0] + 4.1
-        r_ring2[counter, 1] = r[i, 1] + 8
+        r_ring2[counter, 0] = r[i,0]  + shift#+ 4.1
+        r_ring2[counter, 1] = r[i, 1] #+ 8
         r_ring2[counter, 2] = 0
-        v2[counter, 0] = v_p
+        v2[counter, 0] = -v_p
         counter += 1
-
+#print("ring 2: ")
+#print("sum over all x-values: ", np.sum(r_ring2[:, 0]))
+#print("sum over all y-values: ", np.sum(r_ring2[:, 1]))
+#print("sum over all vx-values: ", np.sum(v2[:, 0]))
+#print("sum over all vy-values: ", np.sum(v2[:, 1]))
 
 # put two rings in one array 
-print(r_ring.shape, r_ring2.shape)
+#print(r_ring.shape, r_ring2.shape)
 r_final = np.concatenate((r_ring, r_ring2))
 v_final = np.concatenate((v, v2))
 print(r_final.shape)

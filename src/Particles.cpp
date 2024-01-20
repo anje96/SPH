@@ -33,11 +33,11 @@ Particles::Particles( int NumParticles, double smoothingLength, double speedOfSo
     /* access for \sigma_ij of particle p (particle index 0 to N-1) via stress[p*DIM*DIM + i*DIM + j]
     */
     stress = new double[NumParticles*DIM*DIM]; 
-    S11 = new double[NumParticles];
-    S12 = new double[NumParticles];
-    S13 = new double[NumParticles];
-    S22 = new double[NumParticles];
-    S23 = new double[NumParticles];
+    S11 = new double[NumParticles]{0.0};
+    S12 = new double[NumParticles]{0.0};
+    S13 = new double[NumParticles]{0.0};
+    S22 = new double[NumParticles]{0.0};
+    S23 = new double[NumParticles]{0.0};
     dS11 = new double[NumParticles];
     dS12 = new double[NumParticles];
     dS13 = new double[NumParticles];
@@ -275,7 +275,7 @@ void Particles::compPressure(){
         for( int pCounter = 0;  pCounter < N; pCounter++){
             double S_ij[DIM*DIM] = {S11[pCounter], S12[pCounter], S13[pCounter], S12[pCounter], S22[pCounter], S23[pCounter]
             , S13[pCounter], S23[pCounter], -(S11[pCounter]+S22[pCounter]) };
-           
+            //double S_ij[DIM*DIM] = {0,0,0,0,0,0,0,0,0};
             for( int i = 0; i < DIM; i++){
                 for(int j = 0; j < DIM; j++){
                     if(i == j){
@@ -360,11 +360,19 @@ void Particles::compdS(){
 
         for(int k = 0; k < DIM; k++){
             
-            dS11[pCounter] += S_ij[indexMatrix(0,k)]*omega[indexMatrix(0,k)] + omega[indexMatrix(0,k)]* S_ij[indexMatrix(k,0)];
+            // like in elastics paper
+            /*dS11[pCounter] += S_ij[indexMatrix(0,k)]*omega[indexMatrix(0,k)] + omega[indexMatrix(0,k)]* S_ij[indexMatrix(k,0)];
             dS12[pCounter] += S_ij[indexMatrix(0,k)]*omega[indexMatrix(1,k)] + omega[indexMatrix(0,k)]* S_ij[indexMatrix(k,1)];
             dS22[pCounter] += S_ij[indexMatrix(1,k)]*omega[indexMatrix(1,k)] + omega[indexMatrix(1,k)]* S_ij[indexMatrix(k,1)];
             dS13[pCounter] += S_ij[indexMatrix(0,k)]*omega[indexMatrix(2,k)] + omega[indexMatrix(0,k)]* S_ij[indexMatrix(k,2)];
-            dS23[pCounter] += S_ij[indexMatrix(1,k)]*omega[indexMatrix(2,k)] + omega[indexMatrix(1,k)]* S_ij[indexMatrix(k,2)];
+            dS23[pCounter] += S_ij[indexMatrix(1,k)]*omega[indexMatrix(2,k)] + omega[indexMatrix(1,k)]* S_ij[indexMatrix(k,2)];*/
+
+            // like in miluphpc and milupcuda paper
+            dS11[pCounter] += S_ij[indexMatrix(0,k)]*omega[indexMatrix(k,0)] - omega[indexMatrix(0,k)]* S_ij[indexMatrix(k,0)];
+            dS12[pCounter] += S_ij[indexMatrix(0,k)]*omega[indexMatrix(k,1)] - omega[indexMatrix(0,k)]* S_ij[indexMatrix(k,1)];
+            dS22[pCounter] += S_ij[indexMatrix(1,k)]*omega[indexMatrix(k,1)] - omega[indexMatrix(1,k)]* S_ij[indexMatrix(k,1)];
+            dS13[pCounter] += S_ij[indexMatrix(0,k)]*omega[indexMatrix(k,2)] - omega[indexMatrix(0,k)]* S_ij[indexMatrix(k,2)];
+            dS23[pCounter] += S_ij[indexMatrix(1,k)]*omega[indexMatrix(k,2)] - omega[indexMatrix(1,k)]* S_ij[indexMatrix(k,2)];
         }
 
     }

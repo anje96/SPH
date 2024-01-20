@@ -162,16 +162,17 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
         particles.x[pCounter] = predParticles.x[pCounter]+ 0.5*deltaT*(predParticles.vx[pCounter]-particles.vx[pCounter]);
         particles.y[pCounter] = predParticles.y[pCounter]+ 0.5*deltaT*(predParticles.vy[pCounter]-particles.vy[pCounter]);
         particles.z[pCounter] = predParticles.z[pCounter]+ 0.5*deltaT*(predParticles.vz[pCounter]-particles.vz[pCounter]);
-
 #endif
 
         particles.vx[pCounter] = predParticles.vx[pCounter] + 0.5 *deltaT *(predParticles.ax[pCounter]-particles.ax[pCounter]);
         particles.vy[pCounter] = predParticles.vy[pCounter] + 0.5 *deltaT *(predParticles.ay[pCounter]-particles.ay[pCounter]);
         particles.vz[pCounter] = predParticles.vz[pCounter] + 0.5 *deltaT *(predParticles.az[pCounter]-particles.az[pCounter]);
+   
+
 
 #if CALC_DENSITY == 1
-        particles.rho[pCounter] = predParticles.rho[pCounter] + 0.5* deltaT*(predParticles.drho[pCounter]-particles.drho[pCounter]);
-        
+       particles.rho[pCounter] = predParticles.rho[pCounter] + 0.5* deltaT*(predParticles.drho[pCounter]-particles.drho[pCounter]);
+           
 #if DEBUG_LEVEL == (1 || 2)
         
         if(particles.rho[pCounter]< 0){
@@ -199,7 +200,7 @@ void doTimestepHeun(Particles &particles, double smoothingLength, double deltaT,
         particles.S12[pCounter] = predParticles.S12[pCounter] + 0.5* deltaT*(predParticles.dS12[pCounter]- particles.dS12[pCounter]);
         particles.S13[pCounter] = predParticles.S13[pCounter] + 0.5* deltaT*(predParticles.dS13[pCounter]- particles.dS13[pCounter]);
         particles.S22[pCounter] = predParticles.S22[pCounter] + 0.5* deltaT*(predParticles.dS22[pCounter]- particles.dS22[pCounter]);
-        particles.S23[pCounter] = predParticles.S23[pCounter] + 0.5* deltaT*(predParticles.dS23[pCounter]- particles.dS23[pCounter]);
+        particles.S23[pCounter] = predParticles.S23[pCounter] + 0.5* deltaT*(predParticles.dS23[pCounter]- particles.dS23[pCounter]);      
 #endif
  
     }

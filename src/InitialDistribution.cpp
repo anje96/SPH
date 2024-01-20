@@ -11,7 +11,7 @@ InitialDistribution::InitialDistribution(const std::string &file){
     // read datasets from file
     HighFive::DataSet vel = h5file.getDataSet("v");
     HighFive::DataSet mass = h5file.getDataSet("m");
-    HighFive::DataSet pos = h5file.getDataSet("r");
+    HighFive::DataSet pos = h5file.getDataSet("x");
     
 #if CALC_DENSITY == 1
     //if(h5file.exist("rho")){

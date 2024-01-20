@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import h5py
 
 #want an initial Distribution, set density true
-density = True
+density = False
 
 
 #Dim
