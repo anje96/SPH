@@ -5,12 +5,15 @@ CC := g++
 INCLDIR := include
 HDF5DIR :=
 HDF5LIB := 
+BOOSTDIR := 
+BOOSTLIB := 
+HOLIB := 
 
 # resource on flags: https://stackoverflow.com/questions/2855121/what-is-the-purpose-of-using-pedantic-in-the-gcc-g-compiler
 # Set compiler flags
-CFLAGS := -std=c++11 -pedantic -Wall -O3 -I$(INCLDIR) -I$(HDF5DIR)
+CFLAGS := -std=c++11 -pedantic -Wall -O3 -I$(INCLDIR) -I$(HDF5DIR) -I$(BOOSTDIR) -I$(HOLIB)
 # Set linker flags
-LDFLAGS := -std=c++11 -lncurses -lm -L$(HDF5LIB) -lhdf5
+LDFLAGS := -std=c++11 -lncurses -lm -L$(HDF5LIB) -lhdf5 -L$(BOOSTLIB) -lboost_filesystem
 
 # Define extensions of files
 SRCEXT := cpp
